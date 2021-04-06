@@ -1,0 +1,5 @@
+{
+    "triggerTaskOnSave.tasks": {
+        "build web": ["src/**/*.zig"]
+    }
+}
