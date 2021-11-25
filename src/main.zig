@@ -1,7 +1,7 @@
 const std = @import("std");
 const za = @import("zalgebra");
-const vec3 = za.vec3;
-const mat4 = za.mat4;
+const Vec3 = za.Vec3;
+const Mat4 = za.Mat4;
 const gl = @import("webgl.zig");
 const keys = @import("keys.zig");
 
@@ -41,7 +41,6 @@ export fn onResize(w: c_uint, h: c_uint, s: f32) void {
 var cam_x: f32 = 0;
 var cam_y: f32 = 0;
 export fn onKeyDown(key: c_uint) void {
-    var text: [1]u8 = undefined;
     switch (key) {
         keys.KEY_LEFT => cam_x -= 0.1,
         keys.KEY_RIGHT => cam_x += 0.1,
@@ -57,8 +56,8 @@ export fn onAnimationFrame() void {
     gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT);
 
     const projection = za.perspective(45.0, video_width / video_height, 0.1, 10.0);
-    const view = mat4.from_translate(vec3.new(cam_x, cam_y, -4));
-    const model = mat4.from_rotation(2 * @intToFloat(f32, frame), vec3.up());
+    const view = Mat4.fromTranslate(Vec3.new(cam_x, cam_y, -4));
+    const model = Mat4.fromRotation(2 * @intToFloat(f32, frame), Vec3.up());
 
     const mvp = projection.mult(view.mult(model));
     gl.glUniformMatrix4fv(mvp_loc, 1, gl.GL_FALSE, &mvp.data[0]);
