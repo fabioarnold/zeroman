@@ -1,14 +1,14 @@
-# Hello WebGL in Zig
+# Zero Man
 
 ## Get the source
 
 ```bash
-$ git clone --recursive https://github.com/fabioarnold/hello-webgl
+$ git clone --recursive https://github.com/fabioarnold/zeroman
 ```
 
-## Build main.wasm
+## Build `zig-out/lib/main.wasm`
 
 ```bash
-$ cd hello-webgl
-$ zig build --prefix .
+$ cd zeroman
+$ zig build
 ```
