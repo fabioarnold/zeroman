@@ -124,7 +124,7 @@ fn updatePlayer(player: *Player) void {
     const room = cur_stage.rooms[game_data.cur_room_index];
     const player_old_x = player.box.x;
 
-    const input = Player.Input.scanKeyboard();
+    const input = Player.Input.scanKeyboard().combine(Player.Input.scanGamepad());
     player.handleInput(room, cur_stage.attribs, input, game_data.prev_input);
     game_data.prev_input = input;
 

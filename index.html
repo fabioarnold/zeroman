@@ -34,12 +34,26 @@
       // ...zigdom,
       ...webgl,
       jsConsoleLog,
-      jsIsKeyDown
+      isKeyDown,
+      isButtonDown,
     }
 
     let pressedKeys = {};
-    function jsIsKeyDown(keyCode) {
+    function isKeyDown(keyCode) {
       return pressedKeys[keyCode] == true;
+    }
+
+    function isButtonDown(buttonIndex) {
+      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+      if (gamepads.length > 0) {
+        const gamepad = gamepads[0];
+        if (gamepad) {
+          if (buttonIndex < gamepad.buttons.length) {
+            return gamepad.buttons[buttonIndex].pressed;
+          }
+        }
+      }
+      return false;
     }
 
     function jsConsoleLog(ptr, len) {

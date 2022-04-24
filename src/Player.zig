@@ -21,6 +21,16 @@ pub const Input = struct {
     down: bool,
     jump: bool,
 
+    pub fn combine(a: Input, b: Input) Input {
+        return .{
+            .left = a.left or b.left,
+            .right = a.right or b.right,
+            .up = a.up or b.up,
+            .down = a.down or b.down,
+            .jump = a.jump or b.jump,
+        };
+    }
+
     pub fn scanKeyboard() Input {
         return .{
             .left = web.isKeyDown(keys.KEY_LEFT),
@@ -28,6 +38,16 @@ pub const Input = struct {
             .up = web.isKeyDown(keys.KEY_UP),
             .down = web.isKeyDown(keys.KEY_DOWN),
             .jump = web.isKeyDown(keys.KEY_SPACE),
+        };
+    }
+
+    pub fn scanGamepad() Input {
+        return .{
+            .left = web.isButtonDown(14),
+            .right = web.isButtonDown(15),
+            .up = web.isButtonDown(12),
+            .down = web.isButtonDown(13),
+            .jump = web.isButtonDown(0),
         };
     }
 };
