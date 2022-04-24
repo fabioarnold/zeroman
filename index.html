@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title>Hello Web</title>
+  <title>Zero Man</title>
   <!-- <link rel="stylesheet" href="style.css"> -->
   <style type="text/css">
     body {
@@ -18,7 +18,6 @@
 
 <body>
   <canvas id="canvasgl"></canvas>
-  <!-- <canvas id="canvas2d"></canvas> -->
   <script>
     var $canvasgl = document.getElementById("canvasgl");
   </script>
@@ -34,7 +33,27 @@
       // ...canvas,
       // ...zigdom,
       ...webgl,
-      // setScore
+      jsConsoleLog,
+      jsIsKeyDown
+    }
+
+    let pressedKeys = {};
+    function jsIsKeyDown(keyCode) {
+      return pressedKeys[keyCode] == true;
+    }
+
+    function jsConsoleLog(ptr, len) {
+      let str = readCharStr(ptr, len);
+      console.log(str);
+    }
+
+    function onKeyDown(e) {
+      // e.repeat
+      pressedKeys[e.keyCode] = true;
+    }
+
+    function onKeyUp(e) {
+      pressedKeys[e.keyCode] = false;
     }
 
     const readCharStr = (ptr, len) => {
@@ -43,7 +62,7 @@
       return decoder.decode(array)
     }
 
-    fetchAndInstantiate('main.wasm', { env }).then(instance => {
+    fetchAndInstantiate('zig-out/lib/main.wasm', { env }).then(instance => {
       memory = instance.exports.memory;
       instance.exports.onInit();
 
@@ -59,8 +78,8 @@
 
       const onAnimationFrame = instance.exports.onAnimationFrame;
 
-      document.addEventListener('keydown', e => instance.exports.onKeyDown(e.keyCode));
-      // document.addEventListener('keyup', e => instance.exports.onKeyUp(e.keyCode, 0));
+      document.addEventListener('keydown', onKeyDown);
+      document.addEventListener('keyup', onKeyUp);
       // document.addEventListener('mousedown', e => instance.exports.onMouseDown(e.button, e.x, e.y));
       // document.addEventListener('mouseup', e => instance.exports.onMouseUp(e.button, e.x, e.y));
       // document.addEventListener('mousemove', e => instance.exports.onMouseMove(e.x, e.y));

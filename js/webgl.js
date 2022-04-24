@@ -3,13 +3,13 @@ let webgl_fallback = false;
 let gl;
 
 let webglOptions = {
-  alpha: true, //Boolean that indicates if the canvas contains an alpha buffer.
-  antialias: true,  //Boolean that indicates whether or not to perform anti-aliasing.
-  depth: 32,  //Boolean that indicates that the drawing buffer has a depth buffer of at least 16 bits.
+  alpha: false, //Boolean that indicates if the canvas contains an alpha buffer.
+  antialias: false,  //Boolean that indicates whether or not to perform anti-aliasing.
+  depth: true,  //Boolean that indicates that the drawing buffer has a depth buffer of at least 16 bits.
   failIfMajorPerformanceCaveat: false,  //Boolean that indicates if a context will be created if the system performance is low.
   powerPreference: "default", //A hint to the user agent indicating what configuration of GPU is suitable for the WebGL context. Possible values are:
-  premultipliedAlpha: true,  //Boolean that indicates that the page compositor will assume the drawing buffer contains colors with pre-multiplied alpha.
-  preserveDrawingBuffer: true,  //If the value is true the buffers will not be cleared and will preserve their values until cleared or overwritten by the author.
+  premultipliedAlpha: false,  //Boolean that indicates that the page compositor will assume the drawing buffer contains colors with pre-multiplied alpha.
+  preserveDrawingBuffer: false,  //If the value is true the buffers will not be cleared and will preserve their values until cleared or overwritten by the author.
   stencil: true, //Boolean that indicates that the drawing buffer has a stencil buffer of at least 8 bits.
 }
 
@@ -46,6 +46,7 @@ const glPrograms = [];
 const glVertexArrays = [];
 const glBuffers = [];
 const glTextures = [];
+const glFramebuffers = [ null ];
 const glUniformLocations = [];
 
 const glInitShader = (sourcePtr, sourceLen, type) => {
@@ -114,6 +115,7 @@ const glUniformMatrix4fv = (locationId, dataLen, transpose, dataPtr) => {
 };
 const glUniform1i = (locationId, x) => gl.uniform1i(glUniformLocations[locationId], x);
 const glUniform1f = (locationId, x) => gl.uniform1f(glUniformLocations[locationId], x);
+const glUniform2f = (locationId, x, y) => gl.uniform2f(glUniformLocations[locationId], x, y);
 const glCreateBuffer = () => {
   glBuffers.push(gl.createBuffer());
   return glBuffers.length - 1;
@@ -162,6 +164,31 @@ const glCreateTexture = () => {
   glTextures.push(gl.createTexture());
   return glTextures.length - 1;
 };
+const glLoadTexture = (urlPtr, urlLen) => {
+  const url = readCharStr(urlPtr, urlLen);
+  return loadImageTexture(gl, url);
+}
+function createGLTexture(image, texture) {
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  // glTexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  // glTexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+  // glTexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  // glTexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  // gl.generateMipmap(gl.TEXTURE_2D)
+  // glBindTexture(gl.TEXTURE_2D, null);
+}
+function loadImageTexture(gl, url) {
+  var id = glCreateTexture();
+  var texture = glTextures[id];
+  texture.image = new Image();
+  texture.image.crossOrigin = '';
+  texture.image.onload = function () {
+    createGLTexture(texture.image, texture)
+  }
+  texture.image.src = url;
+  return id;
+}
 const glGenTextures = (num, dataPtr) => {
   const textures = new Uint32Array(memory.buffer, dataPtr, num);
   for (let n = 0; n < num; n++) {
@@ -182,8 +209,12 @@ const glDeleteTexture = (id) => {
 };
 const glBindTexture = (target, textureId) => gl.bindTexture(target, glTextures[textureId]);
 const glTexImage2D = (target, level, internalFormat, width, height, border, format, type, dataPtr, dataLen) => {
-  const data = new Uint8Array(memory.buffer, dataPtr, dataLen);
-  gl.texImage2D(target, level, internalFormat, width, height, border, format, type, data);
+  if (dataLen == 0) {
+    gl.texImage2D(target, level, internalFormat, width, height, border, format, type, null);
+  } else {
+    const data = new Uint8Array(memory.buffer, dataPtr, dataLen);
+    gl.texImage2D(target, level, internalFormat, width, height, border, format, type, data);
+  }
 };
 const glTexParameteri = (target, pname, param) => gl.texParameteri(target, pname, param);
 const glActiveTexture = (target) => gl.activeTexture(target);
@@ -191,6 +222,19 @@ const glCreateVertexArray = () => {
   glVertexArrays.push(gl.createVertexArray());
   return glVertexArrays.length - 1;
 };
+const glGenFramebuffers = (num, dataPtr) => {
+  const fbs = new Uint32Array(memory.buffer, dataPtr, num);
+  for (let n = 0; n < num; n++) {
+    glFramebuffers.push(gl.createFramebuffer());
+    fbs[n] = glFramebuffers.length - 1;
+  }
+};
+const glBindFramebuffer = (target, framebuffer) => {
+  gl.bindFramebuffer(target, glFramebuffers[framebuffer]);
+}
+const glFramebufferTexture2D = (target, attachment, textarget, texture, level) => {
+  gl.framebufferTexture2D(target, attachment, textarget, glTextures[texture], level);
+}
 const glGenVertexArrays = (num, dataPtr) => {
   const vaos = new Uint32Array(memory.buffer, dataPtr, num);
   for (let n = 0; n < num; n++) {
@@ -208,10 +252,12 @@ const glDeleteVertexArrays = (num, dataPtr) => {
 const glBindVertexArray = (id) => gl.bindVertexArray(glVertexArrays[id]);
 const glPixelStorei = (type, alignment) => gl.pixelStorei(type, alignment);
 const glGetError = () => gl.getError();
+const glPrintError = () => console.log(gl.getError());
 
 var webgl = {
   glInitShader,
   glLinkShaderProgram,
+  glUseProgram,
   glDeleteProgram,
   glDetachShader,
   glDeleteShader,
@@ -223,21 +269,22 @@ var webgl = {
   glClear,
   glGetAttribLocation,
   glGetUniformLocation,
-  glUniform4f,
-  glUniformMatrix4fv,
   glUniform1i,
   glUniform1f,
+  glUniform2f,
+  glUniform4f,
+  glUniformMatrix4fv,
   glCreateBuffer,
   glGenBuffers,
   glDeleteBuffer,
   glDeleteBuffers,
   glBindBuffer,
   glBufferData,
-  glUseProgram,
   glEnableVertexAttribArray,
   glVertexAttribPointer,
   glDrawArrays,
   glCreateTexture,
+  glLoadTexture,
   glGenTextures,
   glDeleteTextures,
   glDeleteTexture,
@@ -245,10 +292,14 @@ var webgl = {
   glTexImage2D,
   glTexParameteri,
   glActiveTexture,
+  glGenFramebuffers,
+  glBindFramebuffer,
+  glFramebufferTexture2D,
   glCreateVertexArray,
   glGenVertexArrays,
   glDeleteVertexArrays,
   glBindVertexArray,
   glPixelStorei,
   glGetError,
+  glPrintError,
 };

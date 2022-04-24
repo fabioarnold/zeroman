@@ -6,7 +6,7 @@
         {
             "label": "build web",
             "type": "shell",
-            "command": "zig build --prefix .",
+            "command": "zig build",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
