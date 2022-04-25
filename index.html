@@ -3,16 +3,20 @@
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, minimum-scale=1" />
+  <meta name="viewport" content="width=device-width; initial-scale=1; minimum-scale=1; maximum-scale=1; user-scalable=0;"/>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Zero Man</title>
   <style type="text/css">
     * {
+      margin: 0;
+      padding: 0;
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
     }
     body {
-      margin: 0;
+      width: 100%;
+      height: 100%;
       overflow: hidden;
       cursor: none;
     }
@@ -84,6 +88,7 @@
 
     function onKeyDown(e) {
       // e.repeat
+      disableTouchControls();
       pressedKeys[e.keyCode] = true;
     }
 
@@ -102,13 +107,17 @@
       instance.exports.onInit();
 
       function resize() {
-        $canvasgl.width = window.devicePixelRatio * window.innerWidth;
-        $canvasgl.height = window.devicePixelRatio * window.innerHeight;
-        $canvasgl.style.width = window.innerWidth + "px";
-        $canvasgl.style.height = window.innerHeight + "px";
-        instance.exports.onResize(window.innerWidth, window.innerHeight, window.devicePixelRatio);
-        console.log(window);
-        console.log("resize", window.innerWidth, window.innerHeight, window.devicePixelRatio);
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        if (window.visualViewport) {
+          width = window.visualViewport.width;
+          height = window.visualViewport.height;
+        }
+        $canvasgl.width = window.devicePixelRatio * width;
+        $canvasgl.height = window.devicePixelRatio * height;
+        $canvasgl.style.width = width + "px";
+        $canvasgl.style.height = height + "px";
+        instance.exports.onResize(width, height, window.devicePixelRatio);
       }
       window.addEventListener('resize', resize, false);
       resize();
@@ -136,18 +145,24 @@
         .then(results => results.instance);
     }
 
+    let touchControlsEnabled = false;
     function enableTouchControls() {
+      if (touchControlsEnabled) return;
+      touchControlsEnabled = true;
       const touchControls = document.querySelectorAll('.touchcontrol');
       for (const touchControl of touchControls) {
-        console.log(touchControl)
         touchControl.classList.add('touchcontrol-enabled');
       }
     }
-    function touchStart(e) {
-      enableTouchControls();
-      document.removeEventListener("touchstart", touchStart)
+    function disableTouchControls() {
+      if (!touchControlsEnabled) return;
+      touchControlsEnabled = false;
+      const touchControls = document.querySelectorAll('.touchcontrol');
+      for (const touchControl of touchControls) {
+        touchControl.classList.remove('touchcontrol-enabled');
+      }
     }
-    document.addEventListener("touchstart", touchStart);
+    document.addEventListener("touchstart", (e) => enableTouchControls());
 
     document.addEventListener("contextmenu", function (e) {
         e.preventDefault();
