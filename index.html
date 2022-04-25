@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, minimum-scale=1" />
   <title>Zero Man</title>
   <style type="text/css">
     * {
@@ -106,6 +107,8 @@
         $canvasgl.style.width = window.innerWidth + "px";
         $canvasgl.style.height = window.innerHeight + "px";
         instance.exports.onResize(window.innerWidth, window.innerHeight, window.devicePixelRatio);
+        console.log(window);
+        console.log("resize", window.innerWidth, window.innerHeight, window.devicePixelRatio);
       }
       window.addEventListener('resize', resize, false);
       resize();
