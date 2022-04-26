@@ -80,54 +80,54 @@ pub fn draw(self: *Player, context: Renderer.RenderContext) void {
     var flip_x = self.face_left;
     switch (self.state) {
         .idle => {
-            if (self.anim_time > 200) src_rect.pos.x = 24;
+            if (self.anim_time > 200) src_rect.pos.data[0] = 24;
             if (self.anim_time > 210) self.anim_time = 0;
         },
         .sliding => {
-            src_rect.pos.x = 144;
-            src_rect.pos.y = 6;
-            src_rect.size.x = 32;
-            src_rect.size.y = 26;
+            src_rect.pos.data[0] = 144;
+            src_rect.pos.data[1] = 6;
+            src_rect.size.data[0] = 32;
+            src_rect.size.data[1] = 26;
         },
         .running => {
             if (self.anim_time >= 40) self.anim_time = 0;
             const frame = @divTrunc(self.anim_time, 10);
             if (frame == 0) {
-                src_rect.pos.x = 48;
+                src_rect.pos.data[0] = 48;
             } else if (frame == 1 or frame == 3) {
-                src_rect.pos.x = 80;
+                src_rect.pos.data[0] = 80;
             } else if (frame == 2) {
-                src_rect.pos.x = 112;
+                src_rect.pos.data[0] = 112;
             }
-            src_rect.size.x = 32;
+            src_rect.size.data[0] = 32;
         },
         .jumping => {
-            src_rect.pos.x = 176;
-            src_rect.pos.y = 0;
-            src_rect.size.x = 32;
-            src_rect.size.y = 32;
+            src_rect.pos.data[0] = 176;
+            src_rect.pos.data[1] = 0;
+            src_rect.size.data[0] = 32;
+            src_rect.size.data[1] = 32;
         },
         .climbing => {
-            src_rect.pos.x = 208;
-            src_rect.pos.y = 0;
-            src_rect.size.x = 16;
-            src_rect.size.y = 32;
-            flip_x = @mod(self.box.y, 20) < 10;
+            src_rect.pos.data[0] = 208;
+            src_rect.pos.data[1] = 0;
+            src_rect.size.data[0] = 16;
+            src_rect.size.data[1] = 32;
+            flip_x = @mod(self.box.x, 20) < 10;
         },
         else => unreachable,
     }
-    var dst_rect = Renderer.Rect2.new(@intToFloat(f32, self.box.x + @divTrunc(self.box.w - @floatToInt(i32, src_rect.size.x), 2)), @intToFloat(f32, self.box.y), src_rect.size.x, src_rect.size.y);
+    var dst_rect = Renderer.Rect2.new(@intToFloat(f32, self.box.x + @divTrunc(self.box.w - @floatToInt(i32, src_rect.size.data[0]), 2)), @intToFloat(f32, self.box.y), src_rect.size.data[0], src_rect.size.data[1]);
     if (bigger_sprite) {
-        dst_rect.pos.y -= 8;
-        if (self.state == .climbing) dst_rect.pos.y += 4;
-        if (self.state == .jumping) dst_rect.pos.y += 5;
+        dst_rect.pos.data[1] -= 8;
+        if (self.state == .climbing) dst_rect.pos.data[1] += 4;
+        if (self.state == .jumping) dst_rect.pos.data[1] += 5;
     } else {
-        if (self.state == .sliding) dst_rect.pos.y -= 8;
-        if (self.state == .climbing) dst_rect.pos.y -= 4;
+        if (self.state == .sliding) dst_rect.pos.data[1] -= 8;
+        if (self.state == .climbing) dst_rect.pos.data[1] -= 4;
     }
     if (flip_x) {
-        src_rect.pos.x += src_rect.size.x;
-        src_rect.size.x = -src_rect.size.x;
+        src_rect.pos.data[0] += src_rect.size.data[0];
+        src_rect.size.data[0] = -src_rect.size.data[0];
     }
     self.sprite.draw(context, src_rect, dst_rect);
 }

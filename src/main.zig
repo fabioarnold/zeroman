@@ -294,8 +294,8 @@ fn drawRoom(room: Room, context: Renderer.RenderContext, room_tex: Renderer.Text
     const bounds = room.bounds;
     const offset = Vec3.new(@intToFloat(f32, bounds.x), @intToFloat(f32, bounds.y), 0);
     const size = Vec3.new(@intToFloat(f32, bounds.w), @intToFloat(f32, bounds.h), 0);
-    const model = Mat4.fromTranslate(offset).mult(Mat4.fromScale(size));
-    const mvp = projection.mult(context.view.mult(model));
+    const model = Mat4.fromTranslate(offset).mul(Mat4.fromScale(size));
+    const mvp = projection.mul(context.view.mul(model));
     Renderer.drawTilemap(mvp, room_tex, tiles_tex);
 
     if (room.door1_y != Room.no_door) {

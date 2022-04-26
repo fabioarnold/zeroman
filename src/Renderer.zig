@@ -68,16 +68,16 @@ pub const Sprite = struct {
     }
 
     pub fn draw(self: Sprite, context: RenderContext, src_rect: Rect2, dst_rect: Rect2) void {
-        var translation = Mat4.fromTranslate(Vec3.new(dst_rect.pos.x, dst_rect.pos.y, 0));
-        var scale = Mat4.fromScale(Vec3.new(dst_rect.size.x, dst_rect.size.y, 0));
-        const model = translation.mult(scale);
-        const mvp = context.projection.mult(context.view.mult(model));
+        var translation = Mat4.fromTranslate(Vec3.new(dst_rect.pos.data[0], dst_rect.pos.data[1], 0));
+        var scale = Mat4.fromScale(Vec3.new(dst_rect.size.data[0], dst_rect.size.data[1], 0));
+        const model = translation.mul(scale);
+        const mvp = context.projection.mul(context.view.mul(model));
         gl.glUseProgram(blit2d.program);
         gl.glUniformMatrix4fv(blit2d.mvp_loc, 1, gl.GL_FALSE, &mvp.data[0]);
-        const inv_scale = Mat4.fromScale(Vec3.new(1.0 / self.tex_size.x, 1.0 / self.tex_size.y, 0));
-        translation = Mat4.fromTranslate(Vec3.new(src_rect.pos.x, src_rect.pos.y, 0));
-        scale = Mat4.fromScale(Vec3.new(src_rect.size.x, src_rect.size.y, 0));
-        const tex_mat = inv_scale.mult(translation).mult(scale);
+        const inv_scale = Mat4.fromScale(Vec3.new(1.0 / self.tex_size.data[0], 1.0 / self.tex_size.data[1], 0));
+        translation = Mat4.fromTranslate(Vec3.new(src_rect.pos.data[0], src_rect.pos.data[1], 0));
+        scale = Mat4.fromScale(Vec3.new(src_rect.size.data[0], src_rect.size.data[1], 0));
+        const tex_mat = inv_scale.mul(translation).mul(scale);
         gl.glUniformMatrix4fv(blit2d.texmat_loc, 1, gl.GL_FALSE, &tex_mat.data[0]);
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.tex);
         gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 4, 4);
@@ -162,9 +162,9 @@ pub fn drawTilemap(mvp: Mat4, map: Texture, tiles: Texture) void {
     gl.glUniformMatrix4fv(tiled.mvp_loc, 1, gl.GL_FALSE, &mvp.data[0]);
     gl.glUniformMatrix4fv(tiled.texmat_loc, 1, gl.GL_FALSE, &identity.data[0]);
     gl.glUniform1i(tiled.map_loc, 0);
-    gl.glUniform2f(tiled.map_size_loc, map.size.x, map.size.y);
+    gl.glUniform2f(tiled.map_size_loc, map.size.data[0], map.size.data[1]);
     gl.glUniform1i(tiled.tiles_loc, 1);
-    gl.glUniform2f(tiled.tiles_size_loc, tiles.size.x, tiles.size.y);
+    gl.glUniform2f(tiled.tiles_size_loc, tiles.size.data[0], tiles.size.data[1]);
 
     gl.glActiveTexture(gl.GL_TEXTURE1);
     gl.glBindTexture(gl.GL_TEXTURE_2D, tiles.handle);
