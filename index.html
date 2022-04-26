@@ -162,7 +162,10 @@
         touchControl.classList.remove('touchcontrol-enabled');
       }
     }
-    document.addEventListener("touchstart", (e) => enableTouchControls());
+    document.addEventListener("touchstart", function (e) {
+      e.preventDefault();
+      enableTouchControls();
+    }, false);
 
     document.addEventListener("contextmenu", function (e) {
         e.preventDefault();
