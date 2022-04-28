@@ -16,10 +16,10 @@ const Stage = @import("Stage.zig");
 const Player = @import("Player.zig");
 const needleman = @import("stages/needleman.zig").needleman;
 
-const screen_width: u32 = 256;
-const screen_height: u32 = 240;
+const screen_width = 256;
+const screen_height = 240;
 
-const projection = za.orthographic(0, @intToFloat(f32, screen_width), @intToFloat(f32, screen_height), 0, -1, 1);
+const projection = za.orthographic(0, screen_width, screen_height, 0, -1, 1);
 
 var player_sprite: Renderer.Sprite = undefined;
 var door_sprite: Renderer.Sprite = undefined;
@@ -27,6 +27,8 @@ var tiles_tex: Renderer.Texture = undefined;
 var prev_room_tex: Renderer.Texture = undefined;
 var cur_room_tex: Renderer.Texture = undefined;
 var font_tex: Renderer.Texture = undefined;
+var text_tex: Renderer.Texture = undefined;
+var text_buffer: [screen_width / 8 * screen_height / 8]u8 = undefined;
 
 const GameData = struct {
     player: Player,
@@ -78,6 +80,7 @@ export fn onInit() void {
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE);
+    uploadRoomTexture(&cur_room_tex, cur_stage.rooms[game_data.cur_room_index]);
 
     const font_tex_url = "img/font.png";
     font_tex.handle = gl.glLoadTexture(font_tex_url, font_tex_url.len);
@@ -87,8 +90,11 @@ export fn onInit() void {
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE);
-
-    uploadRoomTexture(&cur_room_tex, cur_stage.rooms[game_data.cur_room_index]);
+    std.mem.set(u8, &text_buffer, ' ');
+    const text_x = 32 / 2 - 2;
+    const text_y = 30 / 2;
+    _ = std.fmt.bufPrint(text_buffer[32 * text_y + text_x ..], "READY", .{}) catch unreachable;
+    text_tex = createTextTexture(&text_buffer, screen_width / 8, screen_height / 8);
 }
 
 fn uploadRoomTexture(texture: *Renderer.Texture, room: Room) void {
@@ -100,6 +106,19 @@ fn uploadRoomTexture(texture: *Renderer.Texture, room: Room) void {
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE);
+}
+
+fn createTextTexture(text: []u8, w: u32, h: u32) Renderer.Texture {
+    var texture: Renderer.Texture = undefined;
+    gl.glGenTextures(1, &texture.handle);
+    texture.size = Vec2.new(@intToFloat(f32, w), @intToFloat(f32, h));
+    gl.glBindTexture(gl.GL_TEXTURE_2D, texture.handle);
+    gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_ALPHA, w, h, 0, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, text.ptr, text.len);
+    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST);
+    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
+    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
+    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE);
+    return texture;
 }
 
 export fn onResize(width: c_uint, height: c_uint, scale: f32) void {
@@ -137,7 +156,6 @@ fn updatePlayer(player: *Player) void {
     }
     if (scrollr.x < room.bounds.x) scrollr.x = room.bounds.x;
     if (scrollr.x > room.bounds.x + room.bounds.w - screen_width) scrollr.x = room.bounds.x + room.bounds.w - screen_width;
-
 }
 
 const RoomTransition = enum(u8) {
@@ -288,6 +306,9 @@ fn draw() void {
     drawRoom(cur_stage.rooms[game_data.cur_room_index], context, cur_room_tex, game_data.door1_h, game_data.door2_h);
 
     game_data.player.draw(context);
+
+    const mvp = projection.mul(Mat4.fromScale(Vec3.new(screen_width, screen_height, 0)));
+    Renderer.drawTilemap(mvp, text_tex, font_tex);
 }
 
 fn drawRoom(room: Room, context: Renderer.RenderContext, room_tex: Renderer.Texture, door1_h: u8, door2_h: u8) void {
