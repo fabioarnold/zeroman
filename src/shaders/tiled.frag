@@ -8,10 +8,7 @@ uniform vec2 u_tiles_size;
 varying vec2 v_texcoord;
 
 void main() {
-    float index = 255.0 * texture2D(u_map, v_texcoord).a;
-    if (index == 0.0) discard;
-    index -= 0.5;
-
+    float index = 255.5 * texture2D(u_map, v_texcoord).a;
     float tix = floor(mod(index, u_tiles_size.x));
     float tiy = floor(index / u_tiles_size.x);
     float tx = mod(u_map_size.x * v_texcoord.x, 1.0);

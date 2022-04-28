@@ -42,8 +42,7 @@ pub fn clipX(self: Room, attribs: []const Tile.Attrib, mover: Box, amount: i32) 
         var x = start_x;
         while (x <= stop_x) : (x += 1) {
             const tile_index = self.data[y * self.width + x];
-            if (tile_index == 0) continue;
-            const attrib = attribs[tile_index - 1];
+            const attrib = attribs[tile_index];
             if (attrib == .solid) {
                 const solid = Box{ .x = x * Tile.size, .y = y * Tile.size, .w = Tile.size, .h = Tile.size };
                 clipped = box.castX(clipped, solid);
@@ -77,8 +76,7 @@ pub fn clipY(self: Room, attribs: []const Tile.Attrib, mover: Box, amount: i32) 
         var x = start_x;
         while (x <= stop_x) : (x += 1) {
             const tile_index = self.data[y * self.width + x];
-            if (tile_index == 0) continue;
-            const attrib = attribs[tile_index - 1];
+            const attrib = attribs[tile_index];
             if (attrib == .solid) {
                 const solid = Box{ .x = x * Tile.size, .y = y * Tile.size, .w = Tile.size, .h = Tile.size };
                 clipped = box.castY(clipped, solid);
@@ -108,8 +106,7 @@ pub fn overlap(self: Room, attribs: []const Tile.Attrib, mover: Box) bool {
         var x = start_x;
         while (x <= stop_x) : (x += 1) {
             const tile_index = self.data[y * self.width + x];
-            if (tile_index == 0) continue;
-            const attrib = attribs[tile_index - 1];
+            const attrib = attribs[tile_index];
             if (attrib == .solid) {
                 const solid = Box{ .x = x * Tile.size, .y = y * Tile.size, .w = Tile.size, .h = Tile.size };
                 if (box.overlap(solid)) return true;
@@ -129,6 +126,5 @@ pub fn getTileAttribAtPixel(self: Room, attribs: []const Tile.Attrib, x: i32, y:
 fn getTileAttribAtTile(self: Room, attribs: []const Tile.Attrib, tx: i32, ty: i32) Tile.Attrib {
     if (tx < 0 or ty < 0 or tx >= self.width or ty >= self.height) return .none;
     const ti = self.data[@intCast(usize, ty * self.width + tx)];
-    if (ti == 0) return .none;
-    return attribs[ti - 1];
+    return attribs[ti];
 }
