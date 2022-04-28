@@ -112,7 +112,7 @@ pub fn draw(self: *Player, context: Renderer.RenderContext) void {
             src_rect.pos.data[1] = 0;
             src_rect.size.data[0] = 16;
             src_rect.size.data[1] = 32;
-            flip_x = @mod(self.box.x, 20) < 10;
+            flip_x = @mod(self.box.y, 20) < 10;
         },
         else => unreachable,
     }
