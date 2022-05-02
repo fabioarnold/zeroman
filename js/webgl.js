@@ -216,6 +216,10 @@ const glTexImage2D = (target, level, internalFormat, width, height, border, form
     gl.texImage2D(target, level, internalFormat, width, height, border, format, type, data);
   }
 };
+const glTexSubImage2D = (target, level, xoffset, yoffset, width, height, format, type, dataPtr) => {
+  const data = new Uint8Array(memory.buffer, dataPtr);
+  gl.texSubImage2D(target, level, xoffset, yoffset, width, height, format, type, data);
+}
 const glTexParameteri = (target, pname, param) => gl.texParameteri(target, pname, param);
 const glActiveTexture = (target) => gl.activeTexture(target);
 const glCreateVertexArray = () => {
@@ -290,6 +294,7 @@ var webgl = {
   glDeleteTexture,
   glBindTexture,
   glTexImage2D,
+  glTexSubImage2D,
   glTexParameteri,
   glActiveTexture,
   glGenFramebuffers,

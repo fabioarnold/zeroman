@@ -28,49 +28,61 @@ var prev_room_tex: Renderer.Texture = undefined;
 var cur_room_tex: Renderer.Texture = undefined;
 var font_tex: Renderer.Texture = undefined;
 var text_tex: Renderer.Texture = undefined;
-var text_buffer: [screen_width / 8 * screen_height / 8]u8 = undefined;
+const text_w = screen_width / 8;
+const text_h = screen_height / 8;
+var text_buffer: [text_w * text_h]u8 = undefined;
+
+const GameState = enum {
+    start,
+    playing,
+    gameover,
+};
 
 const GameData = struct {
-    player: Player,
+    state: GameState = .start,
+    counter: u8 = 0, // number of frames to wait in a state
+    player: Player = .{ .sprite = undefined },
     prev_input: Player.Input,
 
     cur_room_index: u8 = 0,
     prev_room_index: u8 = 0,
     door1_h: u8 = 4,
     door2_h: u8 = 4,
-};
 
-var cur_stage: Stage = needleman;
-
-var scrollr = Box{
-    .x = 0,
-    .y = 0,
-    .w = screen_width,
-    .h = screen_height,
-};
-
-var game_data = GameData{
-    .player = Player{
-        .box = Box{
-            .x = 128 - 8,
-            .y = 432 - 24 - 32,
-            .w = 16,
-            .h = 24,
-        },
-        .vx = 0,
-        .vy = 0,
-        .state = .idle,
-        .sprite = undefined,
+    scrollr: Box = Box{
+        .x = 0,
+        .y = 0,
+        .w = screen_width,
+        .h = screen_height,
     },
-    .prev_input = std.mem.zeroes(Player.Input),
+
+    fn reset(self: *GameData) void {
+        self.state = .start;
+        self.counter = 0;
+        self.player.box = Box{
+            .x = 128 - Player.width / 2,
+            .y = 432 - Player.height - 32,
+            .w = Player.width,
+            .h = Player.height,
+        };
+        self.player.vx = 0;
+        self.player.vy = 0;
+        self.player.state = .idle;
+        self.prev_input = std.mem.zeroes(Player.Input);
+        self.cur_room_index = 0;
+        self.scrollr.x = cur_stage.rooms[self.cur_room_index].bounds.x;
+        self.scrollr.y = cur_stage.rooms[self.cur_room_index].bounds.y;
+    }
 };
+
+var game_data = GameData{ .prev_input = undefined };
+var cur_stage: Stage = needleman;
 
 export fn onInit() void {
     Renderer.init();
     game_data.player.load();
     door_sprite.load("img/door.png", 16, 16);
-    scrollr.x = cur_stage.rooms[game_data.cur_room_index].bounds.x;
-    scrollr.y = cur_stage.rooms[game_data.cur_room_index].bounds.y;
+    game_data.reset();
 
     const tiles_tex_url = "img/needleman.png";
     tiles_tex.handle = gl.glLoadTexture(tiles_tex_url, tiles_tex_url.len);
@@ -90,35 +102,35 @@ export fn onInit() void {
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE);
-    std.mem.set(u8, &text_buffer, ' ');
-    const text_x = 32 / 2 - 2;
-    const text_y = 30 / 2;
-    _ = std.fmt.bufPrint(text_buffer[32 * text_y + text_x ..], "READY", .{}) catch unreachable;
-    text_tex = createTextTexture(&text_buffer, screen_width / 8, screen_height / 8);
+    initTextTexture();
 }
 
 fn uploadRoomTexture(texture: *Renderer.Texture, room: Room) void {
     gl.glGenTextures(1, &texture.handle);
     gl.glBindTexture(gl.GL_TEXTURE_2D, texture.handle);
     texture.size = Vec2.new(@intToFloat(f32, room.width), @intToFloat(f32, room.height));
-    gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_ALPHA, room.width, room.height, 0, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, room.data[0..].ptr, room.data.len);
+    gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_ALPHA, room.width, room.height, 0, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, room.data.ptr, room.data.len);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE);
 }
 
-fn createTextTexture(text: []u8, w: u32, h: u32) Renderer.Texture {
-    var texture: Renderer.Texture = undefined;
-    gl.glGenTextures(1, &texture.handle);
-    texture.size = Vec2.new(@intToFloat(f32, w), @intToFloat(f32, h));
-    gl.glBindTexture(gl.GL_TEXTURE_2D, texture.handle);
-    gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_ALPHA, w, h, 0, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, text.ptr, text.len);
+fn initTextTexture() void {
+    std.mem.set(u8, &text_buffer, ' ');
+    gl.glGenTextures(1, &text_tex.handle);
+    text_tex.size = Vec2.new(text_w, text_h);
+    gl.glBindTexture(gl.GL_TEXTURE_2D, text_tex.handle);
+    gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_ALPHA, text_w, text_h, 0, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, &text_buffer, text_buffer.len);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE);
-    return texture;
+}
+
+fn updateTextTexture() void {
+    gl.glBindTexture(gl.GL_TEXTURE_2D, text_tex.handle);
+    gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, text_w, text_h, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, &text_buffer);
 }
 
 export fn onResize(width: c_uint, height: c_uint, scale: f32) void {
@@ -151,11 +163,11 @@ fn updatePlayer(player: *Player) void {
     if (player.box.x != player_old_x) {
         const diff_x = player.box.x - player_old_x;
         const target_x = player.box.x + 8 - screen_width / 2;
-        if (scrollr.x < target_x and diff_x > 0) scrollr.x += diff_x;
-        if (scrollr.x > target_x and diff_x < 0) scrollr.x += diff_x;
+        if (game_data.scrollr.x < target_x and diff_x > 0) game_data.scrollr.x += diff_x;
+        if (game_data.scrollr.x > target_x and diff_x < 0) game_data.scrollr.x += diff_x;
     }
-    if (scrollr.x < room.bounds.x) scrollr.x = room.bounds.x;
-    if (scrollr.x > room.bounds.x + room.bounds.w - screen_width) scrollr.x = room.bounds.x + room.bounds.w - screen_width;
+    if (game_data.scrollr.x < room.bounds.x) game_data.scrollr.x = room.bounds.x;
+    if (game_data.scrollr.x > room.bounds.x + room.bounds.w - screen_width) game_data.scrollr.x = room.bounds.x + room.bounds.w - screen_width;
 }
 
 const RoomTransition = enum(u8) {
@@ -170,102 +182,121 @@ var room_transition: RoomTransition = .none;
 var mode_frame: i32 = 0;
 
 fn tick() void {
-    if (room_transition == .vertical) { // room transition
-        mode_frame += 1;
-        const cur_room = cur_stage.rooms[game_data.cur_room_index];
-        const prev_room = cur_stage.rooms[game_data.prev_room_index];
-        if (cur_room.bounds.y >= prev_room.bounds.y + prev_room.bounds.h) {
-            // scroll down
-            scrollr.y = prev_room.bounds.y + @divTrunc(mode_frame * screen_height, 60);
-            game_data.player.box.y = cur_room.bounds.y - game_data.player.box.h + @divTrunc(mode_frame * game_data.player.box.h, 60);
-        }
-        if (cur_room.bounds.y + cur_room.bounds.h <= prev_room.bounds.y) {
-            // scroll up
-            scrollr.y = prev_room.bounds.y - @divTrunc(mode_frame * screen_height, 60);
-            game_data.player.box.y = prev_room.bounds.y - @divTrunc(mode_frame * game_data.player.box.h, 60);
-        }
-        if (mode_frame == 60) {
-            //player.vy = 0;
-            room_transition = .none;
-        }
-    } else if (room_transition == .door_ltr) {
-        mode_frame += 1;
-        if (mode_frame <= door_duration) {
-            game_data.door1_h = 4 - @intCast(u8, @divTrunc(4 * mode_frame, door_duration));
-        } else if (mode_frame <= door_duration + 64) {
-            game_data.player.tick();
-            const cur_room = cur_stage.rooms[game_data.cur_room_index];
-            // const prev_room = cur_stage.rooms[game_data.prev_room_index];
-            scrollr.x = cur_room.bounds.x - screen_width + @divTrunc((mode_frame - door_duration) * screen_width, 64);
-            game_data.player.box.x = cur_room.bounds.x - 2 * game_data.player.box.w + @divTrunc(3 * game_data.player.box.w * (mode_frame - door_duration), 64);
-        } else if (mode_frame <= door_duration + 64 + door_duration) {
-            game_data.door1_h = @intCast(u8, @divTrunc(4 * (mode_frame - 64 - door_duration), door_duration));
-        }
-        if (mode_frame == door_duration + 64 + door_duration) {
-            room_transition = .none;
-        }
-    } else if (room_transition == .door_rtl) {
-        mode_frame += 1;
-        if (mode_frame <= door_duration) {
-            game_data.door2_h = 4 - @intCast(u8, @divTrunc(4 * mode_frame, door_duration));
-        } else if (mode_frame <= door_duration + 64) {
-            game_data.player.tick();
-            // const cur_room = cur_stage.rooms[game_data.cur_room_index];
-            const prev_room = cur_stage.rooms[game_data.prev_room_index];
-            scrollr.x = prev_room.bounds.x - @divTrunc((mode_frame - door_duration) * screen_width, 64);
-            game_data.player.box.x = prev_room.bounds.x + game_data.player.box.w - @divTrunc(3 * game_data.player.box.w * (mode_frame - door_duration), 64);
-        } else if (mode_frame <= door_duration + 64 + door_duration) {
-            game_data.door2_h = @intCast(u8, @divTrunc(4 * (mode_frame - 64 - door_duration), door_duration));
-        }
-        if (mode_frame == door_duration + 64 + door_duration) {
-            room_transition = .none;
-        }
-    } else {
-        updatePlayer(&game_data.player);
+    switch (game_data.state) {
+        .start => {
+            const text_x = 32 / 2 - 2;
+            const text_y = 30 / 2;
+            const blink_text = if (game_data.counter % 40 < 20) "READY" else "     ";
+            _ = std.fmt.bufPrint(text_buffer[32 * text_y + text_x ..], "{s}", .{blink_text}) catch unreachable;
+            updateTextTexture();
+            game_data.counter += 1;
+            if (game_data.counter == 120) {
+                game_data.counter = 0;
+                game_data.state = .playing;
+                _ = std.fmt.bufPrint(text_buffer[32 * text_y + text_x ..], "{s}", .{"     "}) catch unreachable;
+                updateTextTexture();
+            }
+        },
+        .playing => {
+            if (room_transition == .vertical) { // room transition
+                mode_frame += 1;
+                const cur_room = cur_stage.rooms[game_data.cur_room_index];
+                const prev_room = cur_stage.rooms[game_data.prev_room_index];
+                if (cur_room.bounds.y >= prev_room.bounds.y + prev_room.bounds.h) {
+                    // scroll down
+                    game_data.scrollr.y = prev_room.bounds.y + @divTrunc(mode_frame * screen_height, 60);
+                    game_data.player.box.y = cur_room.bounds.y - game_data.player.box.h + @divTrunc(mode_frame * game_data.player.box.h, 60);
+                }
+                if (cur_room.bounds.y + cur_room.bounds.h <= prev_room.bounds.y) {
+                    // scroll up
+                    game_data.scrollr.y = prev_room.bounds.y - @divTrunc(mode_frame * screen_height, 60);
+                    game_data.player.box.y = prev_room.bounds.y - @divTrunc(mode_frame * game_data.player.box.h, 60);
+                }
+                if (mode_frame == 60) {
+                    //player.vy = 0;
+                    room_transition = .none;
+                }
+            } else if (room_transition == .door_ltr) {
+                mode_frame += 1;
+                if (mode_frame <= door_duration) {
+                    game_data.door1_h = 4 - @intCast(u8, @divTrunc(4 * mode_frame, door_duration));
+                } else if (mode_frame <= door_duration + 64) {
+                    game_data.player.tick();
+                    const cur_room = cur_stage.rooms[game_data.cur_room_index];
+                    // const prev_room = cur_stage.rooms[game_data.prev_room_index];
+                    game_data.scrollr.x = cur_room.bounds.x - screen_width + @divTrunc((mode_frame - door_duration) * screen_width, 64);
+                    game_data.player.box.x = cur_room.bounds.x - 2 * game_data.player.box.w + @divTrunc(3 * game_data.player.box.w * (mode_frame - door_duration), 64);
+                } else if (mode_frame <= door_duration + 64 + door_duration) {
+                    game_data.door1_h = @intCast(u8, @divTrunc(4 * (mode_frame - 64 - door_duration), door_duration));
+                }
+                if (mode_frame == door_duration + 64 + door_duration) {
+                    room_transition = .none;
+                }
+            } else if (room_transition == .door_rtl) {
+                mode_frame += 1;
+                if (mode_frame <= door_duration) {
+                    game_data.door2_h = 4 - @intCast(u8, @divTrunc(4 * mode_frame, door_duration));
+                } else if (mode_frame <= door_duration + 64) {
+                    game_data.player.tick();
+                    // const cur_room = cur_stage.rooms[game_data.cur_room_index];
+                    const prev_room = cur_stage.rooms[game_data.prev_room_index];
+                    game_data.scrollr.x = prev_room.bounds.x - @divTrunc((mode_frame - door_duration) * screen_width, 64);
+                    game_data.player.box.x = prev_room.bounds.x + game_data.player.box.w - @divTrunc(3 * game_data.player.box.w * (mode_frame - door_duration), 64);
+                } else if (mode_frame <= door_duration + 64 + door_duration) {
+                    game_data.door2_h = @intCast(u8, @divTrunc(4 * (mode_frame - 64 - door_duration), door_duration));
+                }
+                if (mode_frame == door_duration + 64 + door_duration) {
+                    room_transition = .none;
+                }
+            } else {
+                updatePlayer(&game_data.player);
 
-        if (findNextRoom(cur_stage.rooms, game_data.cur_room_index, game_data.player.box)) |next_room_index| {
-            setNextRoom(next_room_index);
-            room_transition = .vertical;
-            mode_frame = 0;
-        }
-
-        const cur_room = cur_stage.rooms[game_data.cur_room_index];
-
-        // check door 1
-        if (cur_room.door1_y != 0xFF) {
-            var door_box = Box{
-                .x = cur_room.bounds.x,
-                .y = cur_room.bounds.y + @intCast(i32, cur_room.door1_y) * Tile.size,
-                .w = Tile.size,
-                .h = 4 * Tile.size,
-            };
-            if (game_data.player.box.overlap(door_box)) {
-                door_box.x -= 1;
-                if (findNextRoom(cur_stage.rooms, game_data.cur_room_index, door_box)) |next_room_index| {
+                if (findNextRoom(cur_stage.rooms, game_data.cur_room_index, game_data.player.box)) |next_room_index| {
                     setNextRoom(next_room_index);
-                    room_transition = .door_rtl;
+                    room_transition = .vertical;
                     mode_frame = 0;
                 }
-            }
-        }
 
-        // check door 2
-        if (cur_room.door2_y != Room.no_door) {
-            var door_box = Box{
-                .x = cur_room.bounds.x + cur_room.bounds.w - Tile.size,
-                .y = cur_room.bounds.y + @intCast(i32, cur_room.door2_y) * Tile.size,
-                .w = Tile.size,
-                .h = 4 * Tile.size,
-            };
-            if (game_data.player.box.overlap(door_box)) {
-                door_box.x += 1;
-                if (findNextRoom(cur_stage.rooms, game_data.cur_room_index, door_box)) |next_room_index| {
-                    setNextRoom(next_room_index);
-                    room_transition = .door_ltr;
-                    mode_frame = 0;
+                const cur_room = cur_stage.rooms[game_data.cur_room_index];
+
+                // check door 1
+                if (cur_room.door1_y != 0xFF) {
+                    var door_box = Box{
+                        .x = cur_room.bounds.x,
+                        .y = cur_room.bounds.y + @intCast(i32, cur_room.door1_y) * Tile.size,
+                        .w = Tile.size,
+                        .h = 4 * Tile.size,
+                    };
+                    if (game_data.player.box.overlap(door_box)) {
+                        door_box.x -= 1;
+                        if (findNextRoom(cur_stage.rooms, game_data.cur_room_index, door_box)) |next_room_index| {
+                            setNextRoom(next_room_index);
+                            room_transition = .door_rtl;
+                            mode_frame = 0;
+                        }
+                    }
+                }
+
+                // check door 2
+                if (cur_room.door2_y != Room.no_door) {
+                    var door_box = Box{
+                        .x = cur_room.bounds.x + cur_room.bounds.w - Tile.size,
+                        .y = cur_room.bounds.y + @intCast(i32, cur_room.door2_y) * Tile.size,
+                        .w = Tile.size,
+                        .h = 4 * Tile.size,
+                    };
+                    if (game_data.player.box.overlap(door_box)) {
+                        door_box.x += 1;
+                        if (findNextRoom(cur_stage.rooms, game_data.cur_room_index, door_box)) |next_room_index| {
+                            setNextRoom(next_room_index);
+                            room_transition = .door_ltr;
+                            mode_frame = 0;
+                        }
+                    }
                 }
             }
-        }
+        },
+        .gameover => {},
     }
 }
 
@@ -296,7 +327,7 @@ fn draw() void {
     context.projection = projection;
 
     // texture issue at 0.5
-    context.view = Mat4.fromTranslate(Vec3.new(@intToFloat(f32, -scrollr.x), @intToFloat(f32, -scrollr.y), 0));
+    context.view = Mat4.fromTranslate(Vec3.new(@intToFloat(f32, -game_data.scrollr.x), @intToFloat(f32, -game_data.scrollr.y), 0));
 
     // prev room is visible during transition
     if (room_transition == .vertical or room_transition == .door_ltr or room_transition == .door_rtl) {

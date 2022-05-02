@@ -52,6 +52,7 @@ pub extern fn glDeleteTextures(n: GLsizei, textures: [*c]const GLuint) void;
 pub extern fn glDeleteTexture(texture: GLuint) void;
 pub extern fn glBindTexture(target: GLenum, texture: GLuint) void;
 pub extern fn glTexImage2D(target: GLenum, level: GLint, internalformat: GLint, width: GLsizei, height: GLsizei, border: GLint, format: GLenum, type: GLenum, data: [*c]const u8, data_len: c_uint) void;
+pub extern fn glTexSubImage2D(target: GLenum, level: GLint, xoffset: GLint, yoffset:GLint, width: GLsizei, height: GLsizei, format: GLenum, type: GLenum, data: [*c]const u8) void;
 pub extern fn glTexParameteri(target: GLenum, pname: GLenum, param: GLint) void;
 pub extern fn glActiveTexture(texture: GLenum) void;
 pub extern fn glGenFramebuffers(_: c_int, _: [*c]c_uint) void;

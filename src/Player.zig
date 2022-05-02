@@ -54,10 +54,13 @@ pub const Input = struct {
 
 const Player = @This();
 
-box: Box,
-vx: i32, // fixed point
-vy: i32,
-state: State,
+pub const width = 16;
+pub const height = 24;
+
+box: Box = .{ .x = 0, .y = 0, .w = width, .h = height },
+vx: i32 = 0, // fixed point
+vy: i32 = 0,
+state: State = .idle,
 anim_time: i32 = 0,
 slide_frames: u8 = 0,
 face_left: bool = false,
@@ -176,7 +179,7 @@ fn doMovement(player: *Player, room: Room, attribs: []const Tile.Attrib, input: 
                 return;
             } else if (input.jump and !prev_input.jump) {
                 player.state = .sliding;
-                if (player.box.h == 24) {
+                if (player.box.h == height) {
                     player.box.y += 8;
                     player.box.h -= 8;
                 }
