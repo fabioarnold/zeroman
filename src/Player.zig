@@ -56,6 +56,7 @@ const Player = @This();
 
 pub const width = 16;
 pub const height = 24;
+const jump_speed = -0x04A5; // mega man 3
 
 box: Box = .{ .x = 0, .y = 0, .w = width, .h = height },
 vx: i32 = 0, // fixed point
@@ -157,36 +158,32 @@ fn doMovement(player: *Player, room: Room, attribs: []const Tile.Attrib, input: 
 
     if (input.left) player.vx -= 0x200; //-0x014C;
     if (input.right) player.vx += 0x200; //0x014C;
-    if (input.jump and !prev_input.jump) {
-        if (on_ground) {
-            player.vy = -0x04A5; // megaman 3
-        }
+    if (input.jump and !prev_input.jump and on_ground) {
+        player.vy = jump_speed;
     }
     if (!input.jump and player.vy < -0x021f) {
         // jump key released
         player.vy = 0;
     }
-    if (input.down) {
-        if (on_ground) {
-            const sense_x = player.box.x + @divTrunc(player.box.w, 2);
-            const sense_y = player.box.y + player.box.h;
-            if (room.getTileAttribAtPixel(attribs, sense_x, sense_y) == .ladder) { // do climbing stuff
-                player.box.x = @divTrunc(sense_x, Tile.size) * Tile.size;
-                player.box.y = sense_y - 8;
-                player.vx = 0;
-                player.vy = 0;
-                player.state = .climbing;
-                return;
-            } else if (input.jump and !prev_input.jump) {
-                player.state = .sliding;
-                if (player.box.h == height) {
-                    player.box.y += 8;
-                    player.box.h -= 8;
-                }
-                player.slide_frames = 24;
-                player.vy = 0;
-                return;
+    if (input.down and on_ground) {
+        const sense_x = player.box.x + @divTrunc(player.box.w, 2);
+        const sense_y = player.box.y + player.box.h;
+        if (room.getTileAttribAtPixel(attribs, sense_x, sense_y) == .ladder) { // do climbing stuff
+            player.box.x = @divTrunc(sense_x, Tile.size) * Tile.size;
+            player.box.y = sense_y - 8;
+            player.vx = 0;
+            player.vy = 0;
+            player.state = .climbing;
+            return;
+        } else if (input.jump and !prev_input.jump) {
+            player.state = .sliding;
+            if (player.box.h == height) {
+                player.box.y += 8;
+                player.box.h -= 8;
             }
+            player.slide_frames = 24;
+            player.vy = 0;
+            return;
         }
     }
     if (input.up) {
@@ -266,6 +263,11 @@ fn doSliding(player: *Player, room: Room, attribs: []const Tile.Attrib, input: I
     player.vx = if (player.face_left) -0x300 else 0x300;
 
     var on_ground = room.clipY(attribs, player.box, 1) == 0; // moving 1 pixel down
+    if (input.jump and !prev_input.jump and on_ground) {
+        player.vy = jump_speed;
+        stand_up = true;
+    }
+
     if (stand_up or !on_ground) {
         player.slide_frames = 0;
         player.state = if (!on_ground) .jumping else .idle;
@@ -274,6 +276,7 @@ fn doSliding(player: *Player, room: Room, attribs: []const Tile.Attrib, input: I
         if (room.overlap(attribs, player.box)) { // can't stand up
             player.box.y += 8;
             player.box.h -= 8;
+            player.vy = 0;
             player.state = .sliding;
         } else {
             return;
