@@ -159,6 +159,17 @@ fn updatePlayer(player: *Player) void {
     player.handleInput(room, cur_stage.attribs, input, game_data.prev_input);
     game_data.prev_input = input;
 
+    // physics
+    const amount_x = player.vx >> 8;
+    const clipped_x = room.clipX(cur_stage.attribs, player.box, amount_x);
+    player.box.x += clipped_x;
+    const amount_y = player.vy >> 8;
+    const clipped_y = room.clipY(cur_stage.attribs, player.box, amount_y);
+    player.box.y += clipped_y;
+    const blocked_y = clipped_y != amount_y;
+
+    if (blocked_y and player.vy < 0) player.vy = 0; // bump head
+
     // scrolling
     if (player.box.x != player_old_x) {
         const diff_x = player.box.x - player_old_x;

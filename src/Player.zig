@@ -135,18 +135,17 @@ pub fn draw(self: *Player, context: Renderer.RenderContext) void {
     self.sprite.draw(context, src_rect, dst_rect);
 }
 
-pub fn handleInput(self: *Player, room: Room, attribs: []const Tile.Attrib, input: Input, prev_input: Input) void {
-    switch (self.state) {
-        .idle, .running, .jumping => doMovement(self, room, attribs, input, prev_input),
-        .climbing => doClimbing(self, room, attribs, input, prev_input),
-        .sliding => doSliding(self, room, attribs, input, prev_input),
+pub fn handleInput(player: *Player, room: Room, attribs: []const Tile.Attrib, input: Input, prev_input: Input) void {
+    switch (player.state) {
+        .idle, .running, .jumping => doMovement(player, room, attribs, input, prev_input),
+        .climbing => doClimbing(player, room, attribs, input, prev_input),
+        .sliding => doSliding(player, room, attribs, input, prev_input),
         else => {},
     }
 }
 
 fn doMovement(player: *Player, room: Room, attribs: []const Tile.Attrib, input: Input, prev_input: Input) void {
-    var move_x: i32 = 0;
-    var move_y: i32 = 0;
+    player.vx = 0;
     var on_ground = room.clipY(attribs, player.box, 1) == 0; // moving 1 pixel down
     if (!on_ground) {
         // apply gravity
@@ -156,8 +155,8 @@ fn doMovement(player: *Player, room: Room, attribs: []const Tile.Attrib, input: 
         player.vy = 0;
     }
 
-    if (input.left) move_x -= 0x200; //-0x014C;
-    if (input.right) move_x += 0x200; //0x014C;
+    if (input.left) player.vx -= 0x200; //-0x014C;
+    if (input.right) player.vx += 0x200; //0x014C;
     if (input.jump and !prev_input.jump) {
         if (on_ground) {
             player.vy = -0x04A5; // megaman 3
@@ -167,7 +166,6 @@ fn doMovement(player: *Player, room: Room, attribs: []const Tile.Attrib, input: 
         // jump key released
         player.vy = 0;
     }
-    move_y = player.vy;
     if (input.down) {
         if (on_ground) {
             const sense_x = player.box.x + @divTrunc(player.box.w, 2);
@@ -175,6 +173,8 @@ fn doMovement(player: *Player, room: Room, attribs: []const Tile.Attrib, input: 
             if (room.getTileAttribAtPixel(attribs, sense_x, sense_y) == .ladder) { // do climbing stuff
                 player.box.x = @divTrunc(sense_x, Tile.size) * Tile.size;
                 player.box.y = sense_y - 8;
+                player.vx = 0;
+                player.vy = 0;
                 player.state = .climbing;
                 return;
             } else if (input.jump and !prev_input.jump) {
@@ -195,48 +195,39 @@ fn doMovement(player: *Player, room: Room, attribs: []const Tile.Attrib, input: 
         const ta = room.getTileAttribAtPixel(attribs, sense_x, sense_y);
         if (ta == .ladder) {
             player.box.x = @divTrunc(sense_x, Tile.size) * Tile.size;
+            player.vx = 0;
             player.state = .climbing;
             return;
         }
     }
 
-    if (move_x == 0) {
+    if (player.vx == 0) {
         player.state = .idle;
-    } else if (move_x > 0) {
+    } else if (player.vx > 0) {
         player.state = .running;
         player.face_left = false;
-    } else if (move_x < 0) {
+    } else if (player.vx < 0) {
         player.state = .running;
         player.face_left = true;
     }
     if (!on_ground) {
         player.state = .jumping;
     }
-
-    const amount_x = move_x >> 8;
-    const clipped_x = room.clipX(attribs, player.box, amount_x);
-    player.box.x += clipped_x;
-    const amount_y = move_y >> 8;
-    const clipped_y = room.clipY(attribs, player.box, amount_y);
-    player.box.y += clipped_y;
-    const blocked_y = clipped_y != amount_y;
-
-    if (blocked_y and player.vy < 0) player.vy = 0; // bump head
 }
 
 fn doClimbing(player: *Player, room: Room, attribs: []const Tile.Attrib, input: Input, prev_input: Input) void {
     if (input.left) player.face_left = true;
     if (input.right) player.face_left = false;
-    var move_y: i32 = 0;
+    player.vy = 0;
     if (input.up) {
-        move_y = -0x0100;
+        player.vy = -0x0100;
     }
     if (input.down) {
         var on_ground = room.clipY(attribs, player.box, 1) == 0; // moving 1 pixel down
         if (on_ground) {
             player.state = .idle;
         } else {
-            move_y = 0x0100;
+            player.vy = 0x0100;
         }
     }
     if (input.jump and !prev_input.jump and !input.up) {
@@ -254,13 +245,10 @@ fn doClimbing(player: *Player, room: Room, attribs: []const Tile.Attrib, input: 
             // top edge of ladder -> snap player's y position
             player.box.y = tile_y * Tile.size - 8;
         }
+        player.vy = 0;
         player.state = .idle;
         return;
     }
-
-    const amount_y = move_y >> 8;
-    const clipped_y = room.clipY(attribs, player.box, amount_y);
-    player.box.y += clipped_y;
 }
 
 fn doSliding(player: *Player, room: Room, attribs: []const Tile.Attrib, input: Input, prev_input: Input) void {
@@ -275,6 +263,7 @@ fn doSliding(player: *Player, room: Room, attribs: []const Tile.Attrib, input: I
         player.face_left = false;
         stand_up = true;
     }
+    player.vx = if (player.face_left) -0x300 else 0x300;
 
     var on_ground = room.clipY(attribs, player.box, 1) == 0; // moving 1 pixel down
     if (stand_up or !on_ground) {
@@ -290,9 +279,4 @@ fn doSliding(player: *Player, room: Room, attribs: []const Tile.Attrib, input: I
             return;
         }
     }
-
-    const move_x: i32 = if (player.face_left) -0x300 else 0x300;
-    const amount_x = move_x >> 8;
-    const clipped_x = room.clipX(attribs, player.box, amount_x);
-    player.box.x += clipped_x;
 }
