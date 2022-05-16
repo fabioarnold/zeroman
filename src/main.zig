@@ -198,13 +198,13 @@ fn tick() void {
             const text_x = 32 / 2 - 2;
             const text_y = 30 / 2;
             const blink_text = if (game_data.counter % 40 < 20) "READY" else "     ";
-            _ = std.fmt.bufPrint(text_buffer[32 * text_y + text_x ..], "{s}", .{blink_text}) catch unreachable;
+            std.mem.copy(u8, text_buffer[32 * text_y + text_x ..], blink_text);
             updateTextTexture();
             game_data.counter += 1;
             if (game_data.counter == 120) {
                 game_data.counter = 0;
                 game_data.state = .playing;
-                _ = std.fmt.bufPrint(text_buffer[32 * text_y + text_x ..], "{s}", .{"     "}) catch unreachable;
+                std.mem.copy(u8, text_buffer[32 * text_y + text_x ..], "     ");
                 updateTextTexture();
             }
         },
@@ -269,6 +269,14 @@ fn tick() void {
                 }
 
                 const cur_room = cur_stage.rooms[game_data.cur_room_index];
+                if (!cur_room.bounds.overlap(game_data.player.box)) {
+                    game_data.state = .gameover;
+                    const text_x = 32 / 2 - 4;
+                    const text_y = 30 / 2;
+                    std.mem.copy(u8, text_buffer[32 * text_y + text_x ..], "GAME OVER");
+                    updateTextTexture();
+                    return;
+                }
 
                 // check door 1
                 if (cur_room.door1_y != 0xFF) {
