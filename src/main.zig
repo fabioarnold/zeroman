@@ -70,8 +70,11 @@ const GameData = struct {
         self.player.state = .idle;
         self.prev_input = std.mem.zeroes(Player.Input);
         self.cur_room_index = 0;
+        self.prev_room_index = 0;
         self.scrollr.x = cur_stage.rooms[self.cur_room_index].bounds.x;
         self.scrollr.y = cur_stage.rooms[self.cur_room_index].bounds.y;
+        uploadRoomTexture(&cur_room_tex, cur_stage.rooms[self.cur_room_index]);
+        clearText();
     }
 };
 
@@ -204,10 +207,8 @@ var mode_frame: i32 = 0;
 fn tick() void {
     switch (game_data.state) {
         .start => {
-            const text_x = 32 / 2 - 2;
-            const text_y = 30 / 2;
             const blink_text = if (game_data.counter % 40 < 20) "READY" else "     ";
-            setText(blink_text, text_x, text_y);
+            setText(blink_text, text_w / 2 - 2, text_h / 2);
             game_data.counter += 1;
             if (game_data.counter == 120) {
                 game_data.counter = 0;
@@ -278,10 +279,6 @@ fn tick() void {
                 const cur_room = cur_stage.rooms[game_data.cur_room_index];
                 if (!cur_room.bounds.overlap(game_data.player.box)) {
                     game_data.state = .gameover;
-                    const text_x = 32 / 2 - 4;
-                    const text_y = 30 / 2;
-                    std.mem.copy(u8, text_buffer[32 * text_y + text_x ..], "GAME OVER");
-                    updateTextTexture();
                     return;
                 }
 
@@ -322,7 +319,13 @@ fn tick() void {
                 }
             }
         },
-        .gameover => {},
+        .gameover => {
+            setText("GAME OVER", text_w / 2 - 4, text_h / 2);
+            const input = Player.Input.scanKeyboard().combine(Player.Input.scanGamepad());
+            if (input.jump and !game_data.prev_input.jump) {
+                game_data.reset();
+            }
+        },
     }
 }
 
