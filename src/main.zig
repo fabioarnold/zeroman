@@ -117,15 +117,24 @@ fn uploadRoomTexture(texture: *Renderer.Texture, room: Room) void {
 }
 
 fn initTextTexture() void {
-    std.mem.set(u8, &text_buffer, ' ');
     gl.glGenTextures(1, &text_tex.handle);
     text_tex.size = Vec2.new(text_w, text_h);
     gl.glBindTexture(gl.GL_TEXTURE_2D, text_tex.handle);
+    clearText();
     gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_ALPHA, text_w, text_h, 0, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, &text_buffer, text_buffer.len);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
     gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE);
+}
+
+fn clearText() void {
+    std.mem.set(u8, text_buffer[0..], ' ');
+}
+
+fn setText(text: []const u8, x: usize, y: usize) void {
+    std.debug.assert(x < 32 and y < 30);
+    std.mem.copy(u8, text_buffer[text_w * y + x ..], text);
 }
 
 fn updateTextTexture() void {
@@ -198,14 +207,12 @@ fn tick() void {
             const text_x = 32 / 2 - 2;
             const text_y = 30 / 2;
             const blink_text = if (game_data.counter % 40 < 20) "READY" else "     ";
-            std.mem.copy(u8, text_buffer[32 * text_y + text_x ..], blink_text);
-            updateTextTexture();
+            setText(blink_text, text_x, text_y);
             game_data.counter += 1;
             if (game_data.counter == 120) {
                 game_data.counter = 0;
                 game_data.state = .playing;
-                std.mem.copy(u8, text_buffer[32 * text_y + text_x ..], "     ");
-                updateTextTexture();
+                clearText();
             }
         },
         .playing => {
@@ -345,7 +352,6 @@ fn draw() void {
     var context: Renderer.RenderContext = undefined;
     context.projection = projection;
 
-    // texture issue at 0.5
     context.view = Mat4.fromTranslate(Vec3.new(@intToFloat(f32, -game_data.scrollr.x), @intToFloat(f32, -game_data.scrollr.y), 0));
 
     // prev room is visible during transition
@@ -357,7 +363,9 @@ fn draw() void {
 
     game_data.player.draw(context);
 
+    // text layer
     const mvp = projection.mul(Mat4.fromScale(Vec3.new(screen_width, screen_height, 0)));
+    updateTextTexture();
     Renderer.drawTilemap(mvp, text_tex, font_tex);
 }
 
