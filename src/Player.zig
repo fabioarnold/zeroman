@@ -68,7 +68,7 @@ face_left: bool = false,
 sprite: Renderer.Sprite,
 
 pub fn load(self: *Player) void {
-    self.sprite.load("img/zero.png", 224, 32);
+    self.sprite.texture.loadFromUrl("img/zero.png", 224, 32);
 }
 
 pub fn tick(self: *Player) void {

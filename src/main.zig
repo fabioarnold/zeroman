@@ -3,9 +3,7 @@ const za = @import("zalgebra");
 const Vec2 = za.Vec2;
 const Vec3 = za.Vec3;
 const Mat4 = za.Mat4;
-const gl = @import("webgl.zig");
 
-const keys = @import("keys.zig");
 const web = @import("web.zig");
 
 const Renderer = @import("Renderer.zig");
@@ -21,7 +19,6 @@ const screen_height = 240;
 
 const projection = za.orthographic(0, screen_width, screen_height, 0, -1, 1);
 
-var player_sprite: Renderer.Sprite = undefined;
 var door_sprite: Renderer.Sprite = undefined;
 var tiles_tex: Renderer.Texture = undefined;
 var prev_room_tex: Renderer.Texture = undefined;
@@ -60,8 +57,8 @@ const GameData = struct {
         self.state = .start;
         self.counter = 0;
         self.player.box = Box{
-            .x = 128 - Player.width / 2,
-            .y = 432 - Player.height - 32,
+            .x = (screen_width - Player.width) / 2,
+            .y = screen_height - Player.height + 1, // 432 - Player.height - 32,
             .w = Player.width,
             .h = Player.height,
         };
@@ -84,51 +81,19 @@ var cur_stage: Stage = needleman;
 export fn onInit() void {
     Renderer.init();
     game_data.player.load();
-    door_sprite.load("img/door.png", 16, 16);
+    door_sprite.texture.loadFromUrl("img/door.png", 16, 16);
     game_data.reset();
 
-    const tiles_tex_url = "img/needleman.png";
-    tiles_tex.handle = gl.glLoadTexture(tiles_tex_url, tiles_tex_url.len);
-    tiles_tex.size = Vec2.new(12, 11);
-    gl.glBindTexture(gl.GL_TEXTURE_2D, tiles_tex.handle);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE);
+    tiles_tex.loadFromUrl("img/needleman.png", 12, 11);
     uploadRoomTexture(&cur_room_tex, cur_stage.rooms[game_data.cur_room_index]);
 
-    const font_tex_url = "img/font.png";
-    font_tex.handle = gl.glLoadTexture(font_tex_url, font_tex_url.len);
-    font_tex.size = Vec2.new(16, 8);
-    gl.glBindTexture(gl.GL_TEXTURE_2D, font_tex.handle);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE);
-    initTextTexture();
+    font_tex.loadFromUrl("img/font.png", 16, 8);
+    clearText();
+    text_tex.loadFromData(text_buffer[0..], text_w, text_h);
 }
 
 fn uploadRoomTexture(texture: *Renderer.Texture, room: Room) void {
-    gl.glGenTextures(1, &texture.handle);
-    gl.glBindTexture(gl.GL_TEXTURE_2D, texture.handle);
-    texture.size = Vec2.new(@intToFloat(f32, room.width), @intToFloat(f32, room.height));
-    gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_ALPHA, room.width, room.height, 0, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, room.data.ptr, room.data.len);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE);
-}
-
-fn initTextTexture() void {
-    gl.glGenTextures(1, &text_tex.handle);
-    text_tex.size = Vec2.new(text_w, text_h);
-    gl.glBindTexture(gl.GL_TEXTURE_2D, text_tex.handle);
-    clearText();
-    gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_ALPHA, text_w, text_h, 0, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, &text_buffer, text_buffer.len);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE);
+    texture.loadFromData(room.data, room.width, room.height);
 }
 
 fn clearText() void {
@@ -140,25 +105,8 @@ fn setText(text: []const u8, x: usize, y: usize) void {
     std.mem.copy(u8, text_buffer[text_w * y + x ..], text);
 }
 
-fn updateTextTexture() void {
-    gl.glBindTexture(gl.GL_TEXTURE_2D, text_tex.handle);
-    gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, text_w, text_h, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, &text_buffer);
-}
-
 export fn onResize(width: c_uint, height: c_uint, scale: f32) void {
     Renderer.resize(@intToFloat(f32, width), @intToFloat(f32, height), scale);
-}
-
-var cam_x: f32 = 0;
-var cam_y: f32 = 0;
-export fn onKeyDown(key: c_uint) void {
-    switch (key) {
-        keys.KEY_LEFT => cam_x -= 1.0,
-        keys.KEY_RIGHT => cam_x += 1.0,
-        keys.KEY_DOWN => cam_y += 1.0,
-        keys.KEY_UP => cam_y -= 1.0,
-        else => {},
-    }
 }
 
 fn updatePlayer(player: *Player) void {
@@ -364,11 +312,13 @@ fn draw() void {
 
     drawRoom(cur_stage.rooms[game_data.cur_room_index], context, cur_room_tex, game_data.door1_h, game_data.door2_h);
 
-    game_data.player.draw(context);
+    if (game_data.state != .start) {
+        game_data.player.draw(context);
+    }
 
     // text layer
     const mvp = projection.mul(Mat4.fromScale(Vec3.new(screen_width, screen_height, 0)));
-    updateTextTexture();
+    text_tex.updateData(text_buffer[0..]);
     Renderer.drawTilemap(mvp, text_tex, font_tex);
 }
 

@@ -50,22 +50,40 @@ pub const RenderContext = struct {
 
 pub const Texture = struct {
     handle: gl.GLuint,
-    size: Vec2,
-};
+    width: u32,
+    height: u32,
 
-pub const Sprite = struct {
-    tex: gl.GLuint,
-    tex_size: Vec2,
+    pub fn loadFromUrl(self: *Texture, url: []const u8, width: u32, height: u32) void {
+        self.handle = gl.glLoadTexture(url.ptr, url.len);
+        self.width = width;
+        self.height = height;
+        self.setDefaultParameters();
+    }
 
-    pub fn load(self: *Sprite, url: []const u8, width: f32, height: f32) void {
-        self.tex = gl.glLoadTexture(url.ptr, url.len);
-        self.tex_size = Vec2.new(width, height);
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.tex);
+    pub fn loadFromData(self: *Texture, data: []const u8, width: u32, height: u32) void {
+        self.width = width;
+        self.height = height;
+        gl.glGenTextures(1, &self.handle);
+        self.setDefaultParameters();
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_ALPHA, width, height, 0, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, data.ptr, data.len);
+    }
+
+    pub fn updateData(self: *Texture, data: []const u8) void {
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.handle);
+        gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, self.width, self.height, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, data.ptr);
+    }
+
+    fn setDefaultParameters(self: *Texture) void {
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.handle);
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST);
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE);
     }
+};
+
+pub const Sprite = struct {
+    texture: Texture,
 
     pub fn draw(self: Sprite, context: RenderContext, src_rect: Rect2, dst_rect: Rect2) void {
         var translation = Mat4.fromTranslate(Vec3.new(dst_rect.pos.data[0], dst_rect.pos.data[1], 0));
@@ -74,12 +92,12 @@ pub const Sprite = struct {
         const mvp = context.projection.mul(context.view.mul(model));
         gl.glUseProgram(blit2d.program);
         gl.glUniformMatrix4fv(blit2d.mvp_loc, 1, gl.GL_FALSE, &mvp.data[0]);
-        const inv_scale = Mat4.fromScale(Vec3.new(1.0 / self.tex_size.data[0], 1.0 / self.tex_size.data[1], 0));
+        const inv_scale = Mat4.fromScale(Vec3.new(1.0 / @intToFloat(f32, self.texture.width), 1.0 / @intToFloat(f32, self.texture.height), 0));
         translation = Mat4.fromTranslate(Vec3.new(src_rect.pos.data[0], src_rect.pos.data[1], 0));
         scale = Mat4.fromScale(Vec3.new(src_rect.size.data[0], src_rect.size.data[1], 0));
         const tex_mat = inv_scale.mul(translation).mul(scale);
         gl.glUniformMatrix4fv(blit2d.texmat_loc, 1, gl.GL_FALSE, &tex_mat.data[0]);
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.tex);
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.handle);
         gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 4, 4);
     }
 };
@@ -162,9 +180,9 @@ pub fn drawTilemap(mvp: Mat4, map: Texture, tiles: Texture) void {
     gl.glUniformMatrix4fv(tiled.mvp_loc, 1, gl.GL_FALSE, &mvp.data[0]);
     gl.glUniformMatrix4fv(tiled.texmat_loc, 1, gl.GL_FALSE, &identity.data[0]);
     gl.glUniform1i(tiled.map_loc, 0);
-    gl.glUniform2f(tiled.map_size_loc, map.size.data[0], map.size.data[1]);
+    gl.glUniform2f(tiled.map_size_loc, @intToFloat(f32, map.width), @intToFloat(f32, map.height));
     gl.glUniform1i(tiled.tiles_loc, 1);
-    gl.glUniform2f(tiled.tiles_size_loc, tiles.size.data[0], tiles.size.data[1]);
+    gl.glUniform2f(tiled.tiles_size_loc, @intToFloat(f32, tiles.width), @intToFloat(f32, tiles.height));
 
     gl.glActiveTexture(gl.GL_TEXTURE1);
     gl.glBindTexture(gl.GL_TEXTURE_2D, tiles.handle);
