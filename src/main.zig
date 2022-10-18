@@ -1,12 +1,9 @@
 const std = @import("std");
-const za = @import("zalgebra");
-const Vec2 = za.Vec2;
-const Vec3 = za.Vec3;
-const Mat4 = za.Mat4;
 
 const web = @import("web.zig");
 
 const Renderer = @import("Renderer.zig");
+const Rect2 = Renderer.Rect2;
 const Box = @import("Box.zig");
 const Tile = @import("Tile.zig");
 const Room = @import("Room.zig");
@@ -17,9 +14,7 @@ const needleman = @import("stages/needleman.zig").needleman;
 const screen_width = 256;
 const screen_height = 240;
 
-const projection = za.orthographic(0, screen_width, screen_height, 0, -1, 1);
-
-var door_sprite: Renderer.Sprite = undefined;
+var door_sprite: Renderer.Texture = undefined;
 var tiles_tex: Renderer.Texture = undefined;
 var prev_room_tex: Renderer.Texture = undefined;
 var cur_room_tex: Renderer.Texture = undefined;
@@ -81,7 +76,7 @@ var cur_stage: Stage = needleman;
 export fn onInit() void {
     Renderer.init();
     game_data.player.load();
-    door_sprite.texture.loadFromUrl("img/door.png", 16, 16);
+    door_sprite.loadFromUrl("img/door.png", 16, 16);
     game_data.reset();
 
     tiles_tex.loadFromUrl("img/needleman.png", 12, 11);
@@ -299,59 +294,59 @@ fn setNextRoom(next_room_index: u8) void {
 
 fn draw() void {
     Renderer.clear();
-
-    var context: Renderer.RenderContext = undefined;
-    context.projection = projection;
-
-    context.view = Mat4.fromTranslate(Vec3.new(@intToFloat(f32, -game_data.scrollr.x), @intToFloat(f32, -game_data.scrollr.y), 0));
+    Renderer.scroll.x = @intToFloat(f32, game_data.scrollr.x);
+    Renderer.scroll.y = @intToFloat(f32, game_data.scrollr.y);
 
     // prev room is visible during transition
     if (room_transition == .vertical or room_transition == .door_ltr or room_transition == .door_rtl) {
-        drawRoom(cur_stage.rooms[game_data.prev_room_index], context, prev_room_tex, game_data.door2_h, game_data.door1_h);
+        drawRoom(cur_stage.rooms[game_data.prev_room_index], prev_room_tex, game_data.door2_h, game_data.door1_h);
     }
 
-    drawRoom(cur_stage.rooms[game_data.cur_room_index], context, cur_room_tex, game_data.door1_h, game_data.door2_h);
+    drawRoom(cur_stage.rooms[game_data.cur_room_index], cur_room_tex, game_data.door1_h, game_data.door2_h);
 
     if (game_data.state != .start) {
-        game_data.player.draw(context);
+        game_data.player.draw();
     }
 
     // text layer
-    const mvp = projection.mul(Mat4.fromScale(Vec3.new(screen_width, screen_height, 0)));
     text_tex.updateData(text_buffer[0..]);
-    Renderer.drawTilemap(mvp, text_tex, font_tex);
+    Renderer.scroll.x = 0;
+    Renderer.scroll.y = 0;
+    const text_rect = Rect2.init(0, 0, screen_width, screen_height);
+    Renderer.Tilemap.draw(text_tex, font_tex, text_rect);
 }
 
-fn drawRoom(room: Room, context: Renderer.RenderContext, room_tex: Renderer.Texture, door1_h: u8, door2_h: u8) void {
-    const bounds = room.bounds;
-    const offset = Vec3.new(@intToFloat(f32, bounds.x), @intToFloat(f32, bounds.y), 0);
-    const size = Vec3.new(@intToFloat(f32, bounds.w), @intToFloat(f32, bounds.h), 0);
-    const model = Mat4.fromTranslate(offset).mul(Mat4.fromScale(size));
-    const mvp = projection.mul(context.view.mul(model));
-    Renderer.drawTilemap(mvp, room_tex, tiles_tex);
+fn drawRoom(room: Room, room_tex: Renderer.Texture, door1_h: u8, door2_h: u8) void {
+    const rect = Rect2.init(
+        @intToFloat(f32, room.bounds.x),
+        @intToFloat(f32, room.bounds.y),
+        @intToFloat(f32, room.bounds.w),
+        @intToFloat(f32, room.bounds.h),
+    );
+    Renderer.Tilemap.draw(room_tex, tiles_tex, rect);
 
     if (room.door1_y != Room.no_door) {
         var i: usize = 0;
         while (i < door1_h) : (i += 1) {
-            const dst_rect = Renderer.Rect2.new(
+            const dst_rect = Rect2.init(
                 @intToFloat(f32, room.bounds.x),
                 @intToFloat(f32, @intCast(u32, room.bounds.y) + (room.door1_y + i) * Tile.size),
                 Tile.size,
                 Tile.size,
             );
-            door_sprite.draw(context, Renderer.Rect2.new(0, 0, Tile.size, Tile.size), dst_rect);
+            Renderer.Sprite.draw(door_sprite, Rect2.init(0, 0, Tile.size, Tile.size), dst_rect);
         }
     }
     if (room.door2_y != Room.no_door) {
         var i: usize = 0;
         while (i < door2_h) : (i += 1) {
-            const dst_rect = Renderer.Rect2.new(
+            const dst_rect = Rect2.init(
                 @intToFloat(f32, room.bounds.x + room.bounds.w - Tile.size),
                 @intToFloat(f32, @intCast(u32, room.bounds.y) + (room.door2_y + i) * Tile.size),
                 Tile.size,
                 Tile.size,
             );
-            door_sprite.draw(context, Renderer.Rect2.new(0, 0, Tile.size, Tile.size), dst_rect);
+            Renderer.Sprite.draw(door_sprite, Rect2.init(0, 0, Tile.size, Tile.size), dst_rect);
         }
     }
 }

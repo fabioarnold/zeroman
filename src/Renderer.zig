@@ -1,17 +1,22 @@
-const za = @import("zalgebra");
-const Vec2 = za.Vec2;
-const Vec3 = za.Vec3;
-const Mat4 = za.Mat4;
 const gl = @import("webgl.zig");
 
 var video_width: f32 = 1280;
 var video_height: f32 = 720;
 var video_scale: f32 = 1;
-const fb_width: u32 = 256;
-const fb_height: u32 = 240;
+const fb_width = 256;
+const fb_height = 240;
 var fbo: gl.GLuint = undefined;
 var fbo_tex: gl.GLuint = undefined;
 var blit_vbo: gl.GLuint = undefined;
+
+pub var scroll: Vec2 = Vec2.init(0, 0);
+
+const identity_matrix = [16]f32{
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1,
+};
 
 var blit_scaled: struct {
     program: gl.GLuint,
@@ -34,18 +39,24 @@ var tiled: struct {
     texmat_loc: gl.GLint,
 } = undefined;
 
-pub const Rect2 = struct {
-    pos: Vec2,
-    size: Vec2,
+pub const Vec2 = struct {
+    x: f32,
+    y: f32,
 
-    pub fn new(x: f32, y: f32, w: f32, h: f32) Rect2 {
-        return Rect2{ .pos = Vec2.new(x, y), .size = Vec2.new(w, h) };
+    pub fn init(x: f32, y: f32) Vec2 {
+        return Vec2{ .x = x, .y = y };
     }
 };
 
-pub const RenderContext = struct {
-    projection: Mat4,
-    view: Mat4,
+pub const Rect2 = struct {
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+
+    pub fn init(x: f32, y: f32, w: f32, h: f32) Rect2 {
+        return Rect2{ .x = x, .y = y, .w = w, .h = h };
+    }
 };
 
 pub const Texture = struct {
@@ -83,21 +94,58 @@ pub const Texture = struct {
 };
 
 pub const Sprite = struct {
-    texture: Texture,
-
-    pub fn draw(self: Sprite, context: RenderContext, src_rect: Rect2, dst_rect: Rect2) void {
-        var translation = Mat4.fromTranslate(Vec3.new(dst_rect.pos.data[0], dst_rect.pos.data[1], 0));
-        var scale = Mat4.fromScale(Vec3.new(dst_rect.size.data[0], dst_rect.size.data[1], 0));
-        const model = translation.mul(scale);
-        const mvp = context.projection.mul(context.view.mul(model));
+    pub fn draw(sprite: Texture, src_rect: Rect2, dst_rect: Rect2) void {
+        const x = dst_rect.x - scroll.x;
+        const y = dst_rect.y - scroll.y;
+        const px = 2.0 / @as(f32, fb_width);
+        const py: f32 = 2.0 / @as(f32, fb_height);
+        const mvp = [16]f32{
+            px * dst_rect.w, 0,                0, 0,
+            0,               -py * dst_rect.h, 0, 0,
+            0,               0,                1, 0,
+            px * x - 1,      1 - py * y,       0, 1,
+        };
         gl.glUseProgram(blit2d.program);
-        gl.glUniformMatrix4fv(blit2d.mvp_loc, 1, gl.GL_FALSE, &mvp.data[0]);
-        const inv_scale = Mat4.fromScale(Vec3.new(1.0 / @intToFloat(f32, self.texture.width), 1.0 / @intToFloat(f32, self.texture.height), 0));
-        translation = Mat4.fromTranslate(Vec3.new(src_rect.pos.data[0], src_rect.pos.data[1], 0));
-        scale = Mat4.fromScale(Vec3.new(src_rect.size.data[0], src_rect.size.data[1], 0));
-        const tex_mat = inv_scale.mul(translation).mul(scale);
-        gl.glUniformMatrix4fv(blit2d.texmat_loc, 1, gl.GL_FALSE, &tex_mat.data[0]);
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.handle);
+        gl.glUniformMatrix4fv(blit2d.mvp_loc, 1, gl.GL_FALSE, &mvp);
+
+        const sx = 1.0 / @intToFloat(f32, sprite.width);
+        const sy = 1.0 / @intToFloat(f32, sprite.height);
+        const texmat = [16]f32{
+            src_rect.w * sx, 0,               0, 0,
+            0,               src_rect.h * sy, 0, 0,
+            0,               0,               1, 0,
+            src_rect.x * sx, src_rect.y * sy, 0, 1,
+        };
+        gl.glUniformMatrix4fv(blit2d.texmat_loc, 1, gl.GL_FALSE, &texmat);
+        gl.glBindTexture(gl.GL_TEXTURE_2D, sprite.handle);
+        gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 4, 4);
+    }
+};
+
+pub const Tilemap = struct {
+    pub fn draw(map: Texture, tiles: Texture, rect: Rect2) void {
+        const x = rect.x - scroll.x;
+        const y = rect.y - scroll.y;
+        const px = 2.0 / @as(f32, fb_width);
+        const py: f32 = 2.0 / @as(f32, fb_height);
+        const mvp = [16]f32{
+            px * rect.w, 0,                0, 0,
+            0,               -py * rect.h, 0, 0,
+            0,               0,                1, 0,
+            px * x - 1,      1 - py * y,       0, 1,
+        };
+        gl.glUseProgram(tiled.program);
+        gl.glUniformMatrix4fv(tiled.mvp_loc, 1, gl.GL_FALSE, &mvp);
+        gl.glUniformMatrix4fv(tiled.texmat_loc, 1, gl.GL_FALSE, &identity_matrix);
+        gl.glUniform1i(tiled.map_loc, 0);
+        gl.glUniform2f(tiled.map_size_loc, @intToFloat(f32, map.width), @intToFloat(f32, map.height));
+        gl.glUniform1i(tiled.tiles_loc, 1);
+        gl.glUniform2f(tiled.tiles_size_loc, @intToFloat(f32, tiles.width), @intToFloat(f32, tiles.height));
+
+        gl.glActiveTexture(gl.GL_TEXTURE1);
+        gl.glBindTexture(gl.GL_TEXTURE_2D, tiles.handle);
+        gl.glActiveTexture(gl.GL_TEXTURE0);
+        gl.glBindTexture(gl.GL_TEXTURE_2D, map.handle);
         gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 4, 4);
     }
 };
@@ -172,23 +220,6 @@ pub fn resize(width: f32, height: f32, scale: f32) void {
 pub fn clear() void {
     gl.glClearColor(0.5, 0.5, 0.5, 1);
     gl.glClear(gl.GL_COLOR_BUFFER_BIT);
-}
-
-pub fn drawTilemap(mvp: Mat4, map: Texture, tiles: Texture) void {
-    const identity = Mat4.identity();
-    gl.glUseProgram(tiled.program);
-    gl.glUniformMatrix4fv(tiled.mvp_loc, 1, gl.GL_FALSE, &mvp.data[0]);
-    gl.glUniformMatrix4fv(tiled.texmat_loc, 1, gl.GL_FALSE, &identity.data[0]);
-    gl.glUniform1i(tiled.map_loc, 0);
-    gl.glUniform2f(tiled.map_size_loc, @intToFloat(f32, map.width), @intToFloat(f32, map.height));
-    gl.glUniform1i(tiled.tiles_loc, 1);
-    gl.glUniform2f(tiled.tiles_size_loc, @intToFloat(f32, tiles.width), @intToFloat(f32, tiles.height));
-
-    gl.glActiveTexture(gl.GL_TEXTURE1);
-    gl.glBindTexture(gl.GL_TEXTURE_2D, tiles.handle);
-    gl.glActiveTexture(gl.GL_TEXTURE0);
-    gl.glBindTexture(gl.GL_TEXTURE_2D, map.handle);
-    gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 4, 4);
 }
 
 pub fn beginDraw() void {

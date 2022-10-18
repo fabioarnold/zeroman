@@ -2,6 +2,7 @@ const web = @import("web.zig");
 const keys = @import("keys.zig");
 const Box = @import("Box.zig");
 const Renderer = @import("Renderer.zig");
+const Rect2 = Renderer.Rect2;
 const Tile = @import("Tile.zig");
 const Room = @import("Room.zig");
 
@@ -65,10 +66,10 @@ state: State = .idle,
 anim_time: i32 = 0,
 slide_frames: u8 = 0,
 face_left: bool = false,
-sprite: Renderer.Sprite,
+sprite: Renderer.Texture,
 
 pub fn load(self: *Player) void {
-    self.sprite.texture.loadFromUrl("img/zero.png", 224, 32);
+    self.sprite.loadFromUrl("img/zero.png", 224, 32);
 }
 
 pub fn tick(self: *Player) void {
@@ -78,62 +79,62 @@ pub fn tick(self: *Player) void {
     }
 }
 
-pub fn draw(self: *Player, context: Renderer.RenderContext) void {
+pub fn draw(self: *Player) void {
     const bigger_sprite = true;
-    var src_rect = if (bigger_sprite) Renderer.Rect2.new(0, 0, 24, 32) else Renderer.Rect2.new(0, 8, 24, 24);
+    var src_rect = if (bigger_sprite) Rect2.init(0, 0, 24, 32) else Rect2.init(0, 8, 24, 24);
     var flip_x = self.face_left;
     switch (self.state) {
         .idle => {
-            if (self.anim_time > 200) src_rect.pos.data[0] = 24;
+            if (self.anim_time > 200) src_rect.x = 24;
             if (self.anim_time > 210) self.anim_time = 0;
         },
         .sliding => {
-            src_rect.pos.data[0] = 144;
-            src_rect.pos.data[1] = 6;
-            src_rect.size.data[0] = 32;
-            src_rect.size.data[1] = 26;
+            src_rect.x = 144;
+            src_rect.y = 6;
+            src_rect.w = 32;
+            src_rect.h = 26;
         },
         .running => {
             if (self.anim_time >= 40) self.anim_time = 0;
             const frame = @divTrunc(self.anim_time, 10);
             if (frame == 0) {
-                src_rect.pos.data[0] = 48;
+                src_rect.x = 48;
             } else if (frame == 1 or frame == 3) {
-                src_rect.pos.data[0] = 80;
+                src_rect.x = 80;
             } else if (frame == 2) {
-                src_rect.pos.data[0] = 112;
+                src_rect.x = 112;
             }
-            src_rect.size.data[0] = 32;
+            src_rect.w = 32;
         },
         .jumping => {
-            src_rect.pos.data[0] = 176;
-            src_rect.pos.data[1] = 0;
-            src_rect.size.data[0] = 32;
-            src_rect.size.data[1] = 32;
+            src_rect.x = 176;
+            src_rect.y = 0;
+            src_rect.w = 32;
+            src_rect.h = 32;
         },
         .climbing => {
-            src_rect.pos.data[0] = 208;
-            src_rect.pos.data[1] = 0;
-            src_rect.size.data[0] = 16;
-            src_rect.size.data[1] = 32;
+            src_rect.x = 208;
+            src_rect.y = 0;
+            src_rect.w = 16;
+            src_rect.h = 32;
             flip_x = @mod(self.box.y, 20) < 10;
         },
         else => unreachable,
     }
-    var dst_rect = Renderer.Rect2.new(@intToFloat(f32, self.box.x + @divTrunc(self.box.w - @floatToInt(i32, src_rect.size.data[0]), 2)), @intToFloat(f32, self.box.y), src_rect.size.data[0], src_rect.size.data[1]);
+    var dst_rect = Rect2.init(@intToFloat(f32, self.box.x + @divTrunc(self.box.w - @floatToInt(i32, src_rect.w), 2)), @intToFloat(f32, self.box.y), src_rect.w, src_rect.h);
     if (bigger_sprite) {
-        dst_rect.pos.data[1] -= 8;
-        if (self.state == .climbing) dst_rect.pos.data[1] += 4;
-        if (self.state == .jumping) dst_rect.pos.data[1] += 5;
+        dst_rect.y -= 8;
+        if (self.state == .climbing) dst_rect.y += 4;
+        if (self.state == .jumping) dst_rect.y += 5;
     } else {
-        if (self.state == .sliding) dst_rect.pos.data[1] -= 8;
-        if (self.state == .climbing) dst_rect.pos.data[1] -= 4;
+        if (self.state == .sliding) dst_rect.y -= 8;
+        if (self.state == .climbing) dst_rect.y -= 4;
     }
     if (flip_x) {
-        src_rect.pos.data[0] += src_rect.size.data[0];
-        src_rect.size.data[0] = -src_rect.size.data[0];
+        src_rect.x += src_rect.w;
+        src_rect.w = -src_rect.w;
     }
-    self.sprite.draw(context, src_rect, dst_rect);
+    Renderer.Sprite.draw(self.sprite, src_rect, dst_rect);
 }
 
 pub fn handleInput(player: *Player, room: Room, attribs: []const Tile.Attrib, input: Input, prev_input: Input) void {

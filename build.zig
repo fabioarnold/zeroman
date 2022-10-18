@@ -5,6 +5,5 @@ pub fn build(b: *std.build.Builder) void {
     const wasm = b.addSharedLibrary("main", "src/main.zig", .unversioned);
     wasm.setBuildMode(mode);
     wasm.setTarget(.{ .cpu_arch = .wasm32, .os_tag = .freestanding });
-    wasm.addPackagePath("zalgebra", "deps/zalgebra/src/main.zig");
     wasm.install();
 }
