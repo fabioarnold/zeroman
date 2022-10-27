@@ -58,6 +58,7 @@ const Player = @This();
 pub const width = 16;
 pub const height = 24;
 const jump_speed = -0x04A5; // mega man 3
+pub const vmax = 0x0700;
 
 box: Box = .{ .x = 0, .y = 0, .w = width, .h = height },
 vx: i32 = 0, // fixed point
@@ -152,7 +153,7 @@ fn doMovement(player: *Player, room: Room, attribs: []const Tile.Attrib, input: 
     if (!on_ground) {
         // apply gravity
         player.vy += 0x40;
-        if (player.vy > 0x0700) player.vy = 0x0700; // vmax
+        if (player.vy > vmax) player.vy = vmax;
     } else {
         player.vy = 0;
     }

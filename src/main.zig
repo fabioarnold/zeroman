@@ -53,13 +53,13 @@ const GameData = struct {
         self.counter = 0;
         self.player.box = Box{
             .x = (screen_width - Player.width) / 2,
-            .y = screen_height - Player.height + 1, // 432 - Player.height - 32,
+            .y = screen_height - Player.height, // 432 - Player.height - 32,
             .w = Player.width,
             .h = Player.height,
         };
         self.player.vx = 0;
-        self.player.vy = 0;
-        self.player.state = .idle;
+        self.player.vy = Player.vmax;
+        self.player.state = .jumping;
         self.prev_input = std.mem.zeroes(Player.Input);
         self.cur_room_index = 0;
         self.prev_room_index = 0;
@@ -221,8 +221,10 @@ fn tick() void {
 
                 const cur_room = cur_stage.rooms[game_data.cur_room_index];
                 if (!cur_room.bounds.overlap(game_data.player.box)) {
-                    game_data.state = .gameover;
-                    return;
+                    if (game_data.player.box.y > cur_room.bounds.y + cur_room.bounds.h) {
+                        game_data.state = .gameover;
+                        return;
+                    }
                 }
 
                 // check door 1
