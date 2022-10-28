@@ -39,6 +39,12 @@ var tiled: struct {
     texmat_loc: gl.GLint,
 } = undefined;
 
+var colored: struct {
+    program: gl.GLuint,
+    color_loc: gl.GLint,
+    mvp_loc: gl.GLint,
+} = undefined;
+
 pub const Vec2 = struct {
     x: f32,
     y: f32,
@@ -59,6 +65,17 @@ pub const Rect2 = struct {
     }
 };
 
+pub const Color = struct {
+    r: f32,
+    g: f32,
+    b: f32,
+    a: f32,
+
+    pub fn init(r: f32, g: f32, b: f32, a: f32) Color {
+        return Color{ .r = r, .g = g, .b = b, .a = a };
+    }
+};
+
 pub const Texture = struct {
     handle: gl.GLuint = 0,
     width: u32,
@@ -67,29 +84,25 @@ pub const Texture = struct {
     pub fn loadFromUrl(self: *Texture, url: []const u8, width: u32, height: u32) void {
         self.width = width;
         self.height = height;
-        if (self.handle == 0) {
-            gl.glGenTextures(1, &self.handle);
-            self.setDefaultParameters();
-        } else {
-            self.bind();
-        }
+        self.bind();
         gl.glTexImage2DUrl(self.handle, url.ptr, url.len);
     }
 
     pub fn loadFromData(self: *Texture, data: []const u8, width: u32, height: u32) void {
         self.width = width;
         self.height = height;
-        if (self.handle == 0) {
-            gl.glGenTextures(1, &self.handle);
-            self.setDefaultParameters();
-        } else {
-            self.bind();
-        }
+        self.bind();
         gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_ALPHA, width, height, 0, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, data.ptr, data.len);
     }
 
     pub fn bind(self: *Texture) void {
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.handle);
+        if (self.handle == 0) {
+            gl.glGenTextures(1, &self.handle);
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.handle);
+            setDefaultParameters();
+        } else {
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.handle);
+        }
     }
 
     pub fn updateData(self: *Texture, data: []const u8) void {
@@ -97,8 +110,7 @@ pub const Texture = struct {
         gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, self.width, self.height, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, data.ptr);
     }
 
-    fn setDefaultParameters(self: *Texture) void {
-        self.bind();
+    fn setDefaultParameters() void {
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST);
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
@@ -142,10 +154,10 @@ pub const Tilemap = struct {
         const px = 2.0 / @as(f32, fb_width);
         const py: f32 = 2.0 / @as(f32, fb_height);
         const mvp = [16]f32{
-            px * rect.w, 0,                0, 0,
-            0,               -py * rect.h, 0, 0,
-            0,               0,                1, 0,
-            px * x - 1,      1 - py * y,       0, 1,
+            px * rect.w, 0,            0, 0,
+            0,           -py * rect.h, 0, 0,
+            0,           0,            1, 0,
+            px * x - 1,  1 - py * y,   0, 1,
         };
         gl.glUseProgram(tiled.program);
         gl.glUniformMatrix4fv(tiled.mvp_loc, 1, gl.GL_FALSE, &mvp);
@@ -159,6 +171,25 @@ pub const Tilemap = struct {
         gl.glBindTexture(gl.GL_TEXTURE_2D, tiles.handle);
         gl.glActiveTexture(gl.GL_TEXTURE0);
         gl.glBindTexture(gl.GL_TEXTURE_2D, map.handle);
+        gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 4, 4);
+    }
+};
+
+pub const Debug = struct {
+    pub fn drawRect(rect: Rect2, color: Color) void {
+        const x = rect.x - scroll.x;
+        const y = rect.y - scroll.y;
+        const px = 2.0 / @as(f32, fb_width);
+        const py: f32 = 2.0 / @as(f32, fb_height);
+        const mvp = [16]f32{
+            px * rect.w, 0,            0, 0,
+            0,           -py * rect.h, 0, 0,
+            0,           0,            1, 0,
+            px * x - 1,  1 - py * y,   0, 1,
+        };
+        gl.glUseProgram(colored.program);
+        gl.glUniformMatrix4fv(colored.mvp_loc, 1, gl.GL_FALSE, &mvp);
+        gl.glUniform4f(colored.color_loc, color.r, color.g, color.b, color.a);
         gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 4, 4);
     }
 };
@@ -184,18 +215,24 @@ pub fn init() void {
     gl.glBindTexture(gl.GL_TEXTURE_2D, 0);
     gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0);
 
-    const blit_frag_src = @embedFile("shaders/blit.frag");
+    const color_frag_src = @embedFile("shaders/color.frag");
+    const tex_frag_src = @embedFile("shaders/tex.frag");
     const tiled_frag_src = @embedFile("shaders/tiled.frag");
-    const blit2d_vert_src = @embedFile("shaders/blit2d.vert");
-    const blitscaled_vert_src = @embedFile("shaders/blitscaled.vert");
-    blit2d.program = loadShader(blit2d_vert_src, blit_frag_src);
+    const transform_vert_src = @embedFile("shaders/transform.vert");
+    const textransform_vert_src = @embedFile("shaders/textransform.vert");
+    const scale_vert_src = @embedFile("shaders/scale.vert");
+    colored.program = loadShader(transform_vert_src, color_frag_src);
+    gl.glUseProgram(colored.program);
+    colored.color_loc = gl.glGetUniformLocation(colored.program, "u_color", "u_color".len);
+    colored.mvp_loc = gl.glGetUniformLocation(colored.program, "u_mvp", "u_mvp".len);
+    blit2d.program = loadShader(textransform_vert_src, tex_frag_src);
     gl.glUseProgram(blit2d.program);
     blit2d.mvp_loc = gl.glGetUniformLocation(blit2d.program, "u_mvp", "u_mvp".len);
     blit2d.texmat_loc = gl.glGetUniformLocation(blit2d.program, "u_texmat", "u_texmat".len);
-    blit_scaled.program = loadShader(blitscaled_vert_src, blit_frag_src);
+    blit_scaled.program = loadShader(scale_vert_src, tex_frag_src);
     gl.glUseProgram(blit_scaled.program);
     blit_scaled.scale_loc = gl.glGetUniformLocation(blit_scaled.program, "u_scale", "u_scale".len);
-    tiled.program = loadShader(blit2d_vert_src, tiled_frag_src);
+    tiled.program = loadShader(textransform_vert_src, tiled_frag_src);
     gl.glUseProgram(tiled.program);
     tiled.map_loc = gl.glGetUniformLocation(tiled.program, "u_map", "u_map".len);
     tiled.map_size_loc = gl.glGetUniformLocation(tiled.program, "u_map_size", "u_map_size".len);
