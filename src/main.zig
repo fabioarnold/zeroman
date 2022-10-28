@@ -31,6 +31,10 @@ const GameState = enum {
     gameover,
 };
 
+const door_duration = 16;
+var room_transition: RoomTransition = .none;
+var mode_frame: i32 = 0;
+
 const GameData = struct {
     state: GameState = .start,
     counter: u8 = 0, // number of frames to wait in a state
@@ -68,6 +72,153 @@ const GameData = struct {
         self.scrollr.y = cur_stage.rooms[self.cur_room_index].bounds.y;
         uploadRoomTexture(&cur_room_tex, cur_stage.rooms[self.cur_room_index]);
         clearText();
+    }
+
+    fn tickStart(self: *GameData) void {
+        const blink_text = if (self.counter % 40 < 20) "READY" else "     ";
+        setText(blink_text, text_w / 2 - 2, text_h / 2);
+        self.counter += 1;
+        if (self.counter == 120) {
+            self.counter = 0;
+            self.state = .playing;
+            clearText();
+        }
+    }
+
+    fn tickGameOver(self: *GameData) void {
+        setText("GAME OVER", text_w / 2 - 4, text_h / 2);
+        const input = Player.Input.scanKeyboard().combine(Player.Input.scanGamepad());
+        if (input.jump and !self.prev_input.jump) {
+            self.reset();
+        }
+    }
+
+    fn doVerticalRoomTransition(self: *GameData) void {
+        mode_frame += 1;
+        const cur_room = cur_stage.rooms[self.cur_room_index];
+        const prev_room = cur_stage.rooms[self.prev_room_index];
+        if (cur_room.bounds.y >= prev_room.bounds.y + prev_room.bounds.h) {
+            // scroll down
+            self.scrollr.y = prev_room.bounds.y + @divTrunc(mode_frame * screen_height, 60);
+            self.player.box.y = cur_room.bounds.y - self.player.box.h + @divTrunc(mode_frame * self.player.box.h, 60);
+        }
+        if (cur_room.bounds.y + cur_room.bounds.h <= prev_room.bounds.y) {
+            // scroll up
+            self.scrollr.y = prev_room.bounds.y - @divTrunc(mode_frame * screen_height, 60);
+            self.player.box.y = prev_room.bounds.y - @divTrunc(mode_frame * self.player.box.h, 60);
+        }
+        if (mode_frame == 60) {
+            //player.vy = 0;
+            room_transition = .none;
+        }
+    }
+
+    fn doLtrDoorTransition(self: *GameData) void {
+        mode_frame += 1;
+        if (mode_frame <= door_duration) {
+            self.door1_h = 4 - @intCast(u8, @divTrunc(4 * mode_frame, door_duration));
+        } else if (mode_frame <= door_duration + 64) {
+            self.player.tick();
+            const cur_room = cur_stage.rooms[self.cur_room_index];
+            // const prev_room = cur_stage.rooms[self.prev_room_index];
+            self.scrollr.x = cur_room.bounds.x - screen_width + @divTrunc((mode_frame - door_duration) * screen_width, 64);
+            self.player.box.x = cur_room.bounds.x - 2 * self.player.box.w + @divTrunc(3 * self.player.box.w * (mode_frame - door_duration), 64);
+        } else if (mode_frame <= door_duration + 64 + door_duration) {
+            self.door1_h = @intCast(u8, @divTrunc(4 * (mode_frame - 64 - door_duration), door_duration));
+        }
+        if (mode_frame == door_duration + 64 + door_duration) {
+            room_transition = .none;
+        }
+    }
+
+    fn doRtlDoorTransition(self: *GameData) void {
+        mode_frame += 1;
+        if (mode_frame <= door_duration) {
+            self.door2_h = 4 - @intCast(u8, @divTrunc(4 * mode_frame, door_duration));
+        } else if (mode_frame <= door_duration + 64) {
+            self.player.tick();
+            // const cur_room = cur_stage.rooms[self.cur_room_index];
+            const prev_room = cur_stage.rooms[self.prev_room_index];
+            self.scrollr.x = prev_room.bounds.x - @divTrunc((mode_frame - door_duration) * screen_width, 64);
+            self.player.box.x = prev_room.bounds.x + self.player.box.w - @divTrunc(3 * self.player.box.w * (mode_frame - door_duration), 64);
+        } else if (mode_frame <= door_duration + 64 + door_duration) {
+            self.door2_h = @intCast(u8, @divTrunc(4 * (mode_frame - 64 - door_duration), door_duration));
+        }
+        if (mode_frame == door_duration + 64 + door_duration) {
+            room_transition = .none;
+        }
+    }
+
+    fn tickPlaying(self: *GameData) void {
+        if (room_transition != .none) {
+            switch (room_transition) {
+                .vertical => self.doVerticalRoomTransition(),
+                .door_ltr => self.doLtrDoorTransition(),
+                .door_rtl => self.doRtlDoorTransition(),
+                .none => {},
+            }
+            return;
+        }
+
+        updatePlayer(&self.player);
+
+        if (findNextRoom(cur_stage.rooms, self.cur_room_index, self.player.box)) |next_room_index| {
+            setNextRoom(next_room_index);
+            room_transition = .vertical;
+            mode_frame = 0;
+        }
+
+        const cur_room = cur_stage.rooms[self.cur_room_index];
+        if (!cur_room.bounds.overlap(self.player.box)) {
+            if (self.player.box.y > cur_room.bounds.y + cur_room.bounds.h) {
+                self.state = .gameover;
+                return;
+            }
+        }
+
+        // check door 1
+        if (cur_room.door1_y != 0xFF) {
+            var door_box = Box{
+                .x = cur_room.bounds.x,
+                .y = cur_room.bounds.y + @intCast(i32, cur_room.door1_y) * Tile.size,
+                .w = Tile.size,
+                .h = 4 * Tile.size,
+            };
+            if (self.player.box.overlap(door_box)) {
+                door_box.x -= 1;
+                if (findNextRoom(cur_stage.rooms, self.cur_room_index, door_box)) |next_room_index| {
+                    setNextRoom(next_room_index);
+                    room_transition = .door_rtl;
+                    mode_frame = 0;
+                }
+            }
+        }
+
+        // check door 2
+        if (cur_room.door2_y != Room.no_door) {
+            var door_box = Box{
+                .x = cur_room.bounds.x + cur_room.bounds.w - Tile.size,
+                .y = cur_room.bounds.y + @intCast(i32, cur_room.door2_y) * Tile.size,
+                .w = Tile.size,
+                .h = 4 * Tile.size,
+            };
+            if (self.player.box.overlap(door_box)) {
+                door_box.x += 1;
+                if (findNextRoom(cur_stage.rooms, self.cur_room_index, door_box)) |next_room_index| {
+                    setNextRoom(next_room_index);
+                    room_transition = .door_ltr;
+                    mode_frame = 0;
+                }
+            }
+        }
+    }
+
+    fn tick(self: *GameData) void {
+        switch (self.state) {
+            .start => self.tickStart(),
+            .playing => self.tickPlaying(),
+            .gameover => self.tickGameOver(),
+        }
     }
 };
 
@@ -142,135 +293,8 @@ const RoomTransition = enum(u8) {
     door_rtl,
 };
 
-const door_duration = 16;
-var room_transition: RoomTransition = .none;
-var mode_frame: i32 = 0;
-
 fn tick() void {
-    switch (game_data.state) {
-        .start => {
-            const blink_text = if (game_data.counter % 40 < 20) "READY" else "     ";
-            setText(blink_text, text_w / 2 - 2, text_h / 2);
-            game_data.counter += 1;
-            if (game_data.counter == 120) {
-                game_data.counter = 0;
-                game_data.state = .playing;
-                clearText();
-            }
-        },
-        .playing => {
-            if (room_transition == .vertical) { // room transition
-                mode_frame += 1;
-                const cur_room = cur_stage.rooms[game_data.cur_room_index];
-                const prev_room = cur_stage.rooms[game_data.prev_room_index];
-                if (cur_room.bounds.y >= prev_room.bounds.y + prev_room.bounds.h) {
-                    // scroll down
-                    game_data.scrollr.y = prev_room.bounds.y + @divTrunc(mode_frame * screen_height, 60);
-                    game_data.player.box.y = cur_room.bounds.y - game_data.player.box.h + @divTrunc(mode_frame * game_data.player.box.h, 60);
-                }
-                if (cur_room.bounds.y + cur_room.bounds.h <= prev_room.bounds.y) {
-                    // scroll up
-                    game_data.scrollr.y = prev_room.bounds.y - @divTrunc(mode_frame * screen_height, 60);
-                    game_data.player.box.y = prev_room.bounds.y - @divTrunc(mode_frame * game_data.player.box.h, 60);
-                }
-                if (mode_frame == 60) {
-                    //player.vy = 0;
-                    room_transition = .none;
-                }
-            } else if (room_transition == .door_ltr) {
-                mode_frame += 1;
-                if (mode_frame <= door_duration) {
-                    game_data.door1_h = 4 - @intCast(u8, @divTrunc(4 * mode_frame, door_duration));
-                } else if (mode_frame <= door_duration + 64) {
-                    game_data.player.tick();
-                    const cur_room = cur_stage.rooms[game_data.cur_room_index];
-                    // const prev_room = cur_stage.rooms[game_data.prev_room_index];
-                    game_data.scrollr.x = cur_room.bounds.x - screen_width + @divTrunc((mode_frame - door_duration) * screen_width, 64);
-                    game_data.player.box.x = cur_room.bounds.x - 2 * game_data.player.box.w + @divTrunc(3 * game_data.player.box.w * (mode_frame - door_duration), 64);
-                } else if (mode_frame <= door_duration + 64 + door_duration) {
-                    game_data.door1_h = @intCast(u8, @divTrunc(4 * (mode_frame - 64 - door_duration), door_duration));
-                }
-                if (mode_frame == door_duration + 64 + door_duration) {
-                    room_transition = .none;
-                }
-            } else if (room_transition == .door_rtl) {
-                mode_frame += 1;
-                if (mode_frame <= door_duration) {
-                    game_data.door2_h = 4 - @intCast(u8, @divTrunc(4 * mode_frame, door_duration));
-                } else if (mode_frame <= door_duration + 64) {
-                    game_data.player.tick();
-                    // const cur_room = cur_stage.rooms[game_data.cur_room_index];
-                    const prev_room = cur_stage.rooms[game_data.prev_room_index];
-                    game_data.scrollr.x = prev_room.bounds.x - @divTrunc((mode_frame - door_duration) * screen_width, 64);
-                    game_data.player.box.x = prev_room.bounds.x + game_data.player.box.w - @divTrunc(3 * game_data.player.box.w * (mode_frame - door_duration), 64);
-                } else if (mode_frame <= door_duration + 64 + door_duration) {
-                    game_data.door2_h = @intCast(u8, @divTrunc(4 * (mode_frame - 64 - door_duration), door_duration));
-                }
-                if (mode_frame == door_duration + 64 + door_duration) {
-                    room_transition = .none;
-                }
-            } else {
-                updatePlayer(&game_data.player);
-
-                if (findNextRoom(cur_stage.rooms, game_data.cur_room_index, game_data.player.box)) |next_room_index| {
-                    setNextRoom(next_room_index);
-                    room_transition = .vertical;
-                    mode_frame = 0;
-                }
-
-                const cur_room = cur_stage.rooms[game_data.cur_room_index];
-                if (!cur_room.bounds.overlap(game_data.player.box)) {
-                    if (game_data.player.box.y > cur_room.bounds.y + cur_room.bounds.h) {
-                        game_data.state = .gameover;
-                        return;
-                    }
-                }
-
-                // check door 1
-                if (cur_room.door1_y != 0xFF) {
-                    var door_box = Box{
-                        .x = cur_room.bounds.x,
-                        .y = cur_room.bounds.y + @intCast(i32, cur_room.door1_y) * Tile.size,
-                        .w = Tile.size,
-                        .h = 4 * Tile.size,
-                    };
-                    if (game_data.player.box.overlap(door_box)) {
-                        door_box.x -= 1;
-                        if (findNextRoom(cur_stage.rooms, game_data.cur_room_index, door_box)) |next_room_index| {
-                            setNextRoom(next_room_index);
-                            room_transition = .door_rtl;
-                            mode_frame = 0;
-                        }
-                    }
-                }
-
-                // check door 2
-                if (cur_room.door2_y != Room.no_door) {
-                    var door_box = Box{
-                        .x = cur_room.bounds.x + cur_room.bounds.w - Tile.size,
-                        .y = cur_room.bounds.y + @intCast(i32, cur_room.door2_y) * Tile.size,
-                        .w = Tile.size,
-                        .h = 4 * Tile.size,
-                    };
-                    if (game_data.player.box.overlap(door_box)) {
-                        door_box.x += 1;
-                        if (findNextRoom(cur_stage.rooms, game_data.cur_room_index, door_box)) |next_room_index| {
-                            setNextRoom(next_room_index);
-                            room_transition = .door_ltr;
-                            mode_frame = 0;
-                        }
-                    }
-                }
-            }
-        },
-        .gameover => {
-            setText("GAME OVER", text_w / 2 - 4, text_h / 2);
-            const input = Player.Input.scanKeyboard().combine(Player.Input.scanGamepad());
-            if (input.jump and !game_data.prev_input.jump) {
-                game_data.reset();
-            }
-        },
-    }
+    game_data.tick();
 }
 
 // Find a room which overlaps box
@@ -298,7 +322,7 @@ fn draw() void {
     Renderer.scroll.y = @intToFloat(f32, game_data.scrollr.y);
 
     // prev room is visible during transition
-    if (room_transition == .vertical or room_transition == .door_ltr or room_transition == .door_rtl) {
+    if (room_transition != .none) {
         drawRoom(cur_stage.rooms[game_data.prev_room_index], prev_room_tex, game_data.door2_h, game_data.door1_h);
     }
 
