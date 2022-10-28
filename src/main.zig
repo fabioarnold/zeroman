@@ -19,6 +19,8 @@ var tiles_tex: Renderer.Texture = undefined;
 var prev_room_tex: Renderer.Texture = undefined;
 var cur_room_tex: Renderer.Texture = undefined;
 
+var effects_tex: Renderer.Texture = undefined;
+
 var font_tex: Renderer.Texture = undefined;
 var text_tex: Renderer.Texture = undefined;
 const text_w = screen_width / 8;
@@ -172,12 +174,13 @@ const GameData = struct {
         if (!cur_room.bounds.overlap(self.player.box)) {
             if (self.player.box.y > cur_room.bounds.y + cur_room.bounds.h) {
                 self.state = .gameover;
+                death_frame_counter = 0;
                 return;
             }
         }
 
         // check door 1
-        if (cur_room.door1_y != 0xFF) {
+        if (cur_room.door1_y != Room.no_door) {
             var door_box = Box{
                 .x = cur_room.bounds.x,
                 .y = cur_room.bounds.y + @intCast(i32, cur_room.door1_y) * Tile.size,
@@ -230,6 +233,7 @@ export fn onInit() void {
     game_data.player.load();
     door_sprite.loadFromUrl("img/door.png", 16, 16);
     tiles_tex.loadFromUrl("img/needleman.png", 12, 11);
+    effects_tex.loadFromUrl("img/effects.png", 120, 24);
     font_tex.loadFromUrl("img/font.png", 16, 8);
     clearText();
     text_tex.loadFromData(text_buffer[0..], text_w, text_h);
@@ -316,6 +320,22 @@ fn setNextRoom(next_room_index: u8) void {
     uploadRoomTexture(&cur_room_tex, cur_stage.rooms[game_data.cur_room_index]);
 }
 
+var death_frame_counter: u32 = 0;
+fn drawDeathEffect(x: f32, y: f32) void {
+    const frame = (death_frame_counter / 3) % 6;
+    const src_rect = Renderer.Rect2.init(@intToFloat(f32, frame) * 24, 0, 24, 24);
+
+    var i: usize = 0;
+    while (i < 8) : (i += 1) {
+        const angle: f32 = std.math.pi * @intToFloat(f32, i) / 4.0;
+        const r: f32 = 2 * @intToFloat(f32, death_frame_counter);
+        const dst_rect = Renderer.Rect2.init(x + r * @sin(angle), y + r * @cos(angle), 24, 24);
+        Renderer.Sprite.draw(effects_tex, src_rect, dst_rect);
+    }
+
+    death_frame_counter += 1;
+}
+
 fn draw() void {
     Renderer.clear();
     Renderer.scroll.x = @intToFloat(f32, game_data.scrollr.x);
@@ -330,6 +350,10 @@ fn draw() void {
 
     if (game_data.state != .start) {
         game_data.player.draw();
+    }
+
+    if (game_data.state == .gameover) {
+        drawDeathEffect(@intToFloat(f32, game_data.player.box.x) - 4, @intToFloat(f32, game_data.player.box.y));
     }
 
     // text layer
