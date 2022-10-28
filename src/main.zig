@@ -18,6 +18,7 @@ var door_sprite: Renderer.Texture = undefined;
 var tiles_tex: Renderer.Texture = undefined;
 var prev_room_tex: Renderer.Texture = undefined;
 var cur_room_tex: Renderer.Texture = undefined;
+
 var font_tex: Renderer.Texture = undefined;
 var text_tex: Renderer.Texture = undefined;
 const text_w = screen_width / 8;
@@ -77,14 +78,12 @@ export fn onInit() void {
     Renderer.init();
     game_data.player.load();
     door_sprite.loadFromUrl("img/door.png", 16, 16);
-    game_data.reset();
-
     tiles_tex.loadFromUrl("img/needleman.png", 12, 11);
-    uploadRoomTexture(&cur_room_tex, cur_stage.rooms[game_data.cur_room_index]);
-
     font_tex.loadFromUrl("img/font.png", 16, 8);
     clearText();
     text_tex.loadFromData(text_buffer[0..], text_w, text_h);
+
+    game_data.reset();
 }
 
 fn uploadRoomTexture(texture: *Renderer.Texture, room: Room) void {
@@ -289,8 +288,7 @@ fn findNextRoom(rooms: []const Room, skip_room_index: u8, box: Box) ?u8 {
 fn setNextRoom(next_room_index: u8) void {
     game_data.prev_room_index = game_data.cur_room_index;
     game_data.cur_room_index = next_room_index;
-    // TODO: free prev_room_tex
-    prev_room_tex = cur_room_tex;
+    std.mem.swap(Renderer.Texture, &cur_room_tex, &prev_room_tex);
     uploadRoomTexture(&cur_room_tex, cur_stage.rooms[game_data.cur_room_index]);
 }
 

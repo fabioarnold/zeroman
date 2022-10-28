@@ -11,7 +11,7 @@ pub extern fn glInitShader(source: [*c]const u8 , len: c_uint, type: c_uint) c_u
 pub extern fn glLinkShaderProgram(vertexShaderId: c_uint, fragmentShaderId: c_uint) c_uint;
 
 // Textures
-pub extern fn glLoadTexture(url: [*]const u8 , len: c_uint) c_uint;
+pub extern fn glTexImage2DUrl(texture: GLuint, url: [*]const u8 , len: c_uint) void;
 
 // GL
 pub extern fn glViewport(x: GLint, y: GLint, width: GLsizei, height: GLsizei) void;

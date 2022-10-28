@@ -45,7 +45,7 @@ const glShaders = [];
 const glPrograms = [];
 const glVertexArrays = [];
 const glBuffers = [];
-const glTextures = [];
+const glTextures = [ null ];
 const glFramebuffers = [ null ];
 const glUniformLocations = [];
 
@@ -70,31 +70,6 @@ const glLinkShaderProgram = (vertexShaderId, fragmentShaderId) => {
   }
   glPrograms.push(program);
   return glPrograms.length - 1;
-}
-
-function createGLTexture(ctx, image, texture) {
-  ctx.enable(ctx.TEXTURE_2D);
-  ctx.bindTexture(ctx.TEXTURE_2D, texture);
-  ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, ctx.RGBA, ctx.UNSIGNED_BYTE,
-    image);
-  ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, ctx.LINEAR);
-  ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER,
-    ctx.LINEAR_MIPMAP_LINEAR);
-  ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.REPEAT);
-  ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.REPEAT);
-  ctx.generateMipmap(ctx.TEXTURE_2D)
-  ctx.bindTexture(ctx.TEXTURE_2D, null);
-}
-
-function loadImageTexture(gl, url) {
-  var texture = gl.createTexture();
-  texture.image = new Image();
-  texture.image.crossOrigin = '';
-  texture.image.onload = function () {
-    createGLTexture(gl, texture.image, texture)
-  }
-  texture.image.src = url;
-  return texture;
 }
 
 const glViewport = (x, y, width, height) => gl.viewport(x, y, width, height);
@@ -160,54 +135,41 @@ const glVertexAttribPointer = (attribLocation, size, type, normalize, stride, of
   gl.vertexAttribPointer(attribLocation, size, type, normalize, stride, offset);
 }
 const glDrawArrays = (type, offset, count) => gl.drawArrays(type, offset, count);
-const glCreateTexture = () => {
+const createTexture = () => {
   glTextures.push(gl.createTexture());
   return glTextures.length - 1;
 };
-const glLoadTexture = (urlPtr, urlLen) => {
+const glTexImage2DUrl = (textureId, urlPtr, urlLen) => {
   const url = readCharStr(urlPtr, urlLen);
-  return loadImageTexture(gl, url);
-}
-function createGLTexture(image, texture) {
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-  // glTexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  // glTexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-  // glTexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-  // glTexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-  // gl.generateMipmap(gl.TEXTURE_2D)
-  // glBindTexture(gl.TEXTURE_2D, null);
-}
-function loadImageTexture(gl, url) {
-  var id = glCreateTexture();
-  var texture = glTextures[id];
-  texture.image = new Image();
-  texture.image.crossOrigin = '';
-  texture.image.onload = function () {
-    createGLTexture(texture.image, texture)
+  const image = new Image();
+  image.crossOrigin = '';
+  image.onload = () => {
+    gl.bindTexture(gl.TEXTURE_2D, glTextures[textureId]);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
   }
-  texture.image.src = url;
-  return id;
+  image.src = url;
 }
 const glGenTextures = (num, dataPtr) => {
   const textures = new Uint32Array(memory.buffer, dataPtr, num);
   for (let n = 0; n < num; n++) {
-    const b = glCreateTexture();
-    textures[n] = b;
+    textures[n] = createTexture();
   }
 }
 const glDeleteTextures = (num, dataPtr) => {
   const textures = new Uint32Array(memory.buffer, dataPtr, num);
   for (let n = 0; n < num; n++) {
-    gl.glCreateTexture(buffers[n]);
-    glTextures[textures[n]] = undefined;
+    deleteTexture(textures[n]);
   }
 };
-const glDeleteTexture = (id) => {
-  gl.deleteTexture(glShaders[id]);
+const deleteTexture = (id) => {
+  gl.deleteTexture(glTextures[id]);
   glTextures[id] = undefined;
 };
-const glBindTexture = (target, textureId) => gl.bindTexture(target, glTextures[textureId]);
+const glBindTexture = (target, textureId) => {
+  if (textureId != 0) {
+    gl.bindTexture(target, glTextures[textureId]);
+  }
+}
 const glTexImage2D = (target, level, internalFormat, width, height, border, format, type, dataPtr, dataLen) => {
   if (dataLen == 0) {
     gl.texImage2D(target, level, internalFormat, width, height, border, format, type, null);
@@ -246,13 +208,6 @@ const glGenVertexArrays = (num, dataPtr) => {
     vaos[n] = b;
   }
 }
-const glDeleteVertexArrays = (num, dataPtr) => {
-  const vaos = new Uint32Array(memory.buffer, dataPtr, num);
-  for (let n = 0; n < num; n++) {
-    gl.glCreateTexture(vaos[n]);
-    glVertexArrays[vaos[n]] = undefined;
-  }
-};
 const glBindVertexArray = (id) => gl.bindVertexArray(glVertexArrays[id]);
 const glPixelStorei = (type, alignment) => gl.pixelStorei(type, alignment);
 const glGetError = () => gl.getError();
@@ -287,11 +242,9 @@ var webgl = {
   glEnableVertexAttribArray,
   glVertexAttribPointer,
   glDrawArrays,
-  glCreateTexture,
-  glLoadTexture,
+  glTexImage2DUrl,
   glGenTextures,
   glDeleteTextures,
-  glDeleteTexture,
   glBindTexture,
   glTexImage2D,
   glTexSubImage2D,
@@ -302,7 +255,6 @@ var webgl = {
   glFramebufferTexture2D,
   glCreateVertexArray,
   glGenVertexArrays,
-  glDeleteVertexArrays,
   glBindVertexArray,
   glPixelStorei,
   glGetError,

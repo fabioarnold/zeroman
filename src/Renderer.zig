@@ -60,32 +60,45 @@ pub const Rect2 = struct {
 };
 
 pub const Texture = struct {
-    handle: gl.GLuint,
+    handle: gl.GLuint = 0,
     width: u32,
     height: u32,
 
     pub fn loadFromUrl(self: *Texture, url: []const u8, width: u32, height: u32) void {
-        self.handle = gl.glLoadTexture(url.ptr, url.len);
         self.width = width;
         self.height = height;
-        self.setDefaultParameters();
+        if (self.handle == 0) {
+            gl.glGenTextures(1, &self.handle);
+            self.setDefaultParameters();
+        } else {
+            self.bind();
+        }
+        gl.glTexImage2DUrl(self.handle, url.ptr, url.len);
     }
 
     pub fn loadFromData(self: *Texture, data: []const u8, width: u32, height: u32) void {
         self.width = width;
         self.height = height;
-        gl.glGenTextures(1, &self.handle);
-        self.setDefaultParameters();
+        if (self.handle == 0) {
+            gl.glGenTextures(1, &self.handle);
+            self.setDefaultParameters();
+        } else {
+            self.bind();
+        }
         gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_ALPHA, width, height, 0, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, data.ptr, data.len);
     }
 
-    pub fn updateData(self: *Texture, data: []const u8) void {
+    pub fn bind(self: *Texture) void {
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.handle);
+    }
+
+    pub fn updateData(self: *Texture, data: []const u8) void {
+        self.bind();
         gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, self.width, self.height, gl.GL_ALPHA, gl.GL_UNSIGNED_BYTE, data.ptr);
     }
 
     fn setDefaultParameters(self: *Texture) void {
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.handle);
+        self.bind();
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST);
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE);
