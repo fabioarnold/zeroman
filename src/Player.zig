@@ -1,3 +1,4 @@
+const std = @import("std");
 const web = @import("web.zig");
 const keys = @import("keys.zig");
 const Box = @import("Box.zig");
@@ -13,6 +14,13 @@ pub const State = enum {
     jumping,
     climbing,
     hurting,
+
+    pub fn jsonStringify(value: State, options: std.json.StringifyOptions, out_stream: anytype) !void {
+        _ = options;
+        try out_stream.writeByte('"');
+        try out_stream.writeAll(std.meta.tagName(value));
+        try out_stream.writeByte('"');
+    }
 };
 
 pub const Input = struct {
@@ -60,6 +68,8 @@ pub const height = 24;
 const jump_speed = -0x04A5; // mega man 3
 pub const vmax = 0x0700;
 
+var sprite: Renderer.Texture = undefined;
+
 box: Box = .{ .x = 0, .y = 0, .w = width, .h = height },
 vx: i32 = 0, // fixed point
 vy: i32 = 0,
@@ -67,10 +77,9 @@ state: State = .idle,
 anim_time: i32 = 0,
 slide_frames: u8 = 0,
 face_left: bool = false,
-sprite: Renderer.Texture,
 
-pub fn load(self: *Player) void {
-    self.sprite.loadFromUrl("img/zero.png", 224, 32);
+pub fn load() void {
+    sprite.loadFromUrl("img/zero.png", 224, 32);
 }
 
 pub fn tick(self: *Player) void {
@@ -135,7 +144,7 @@ pub fn draw(self: *Player) void {
         src_rect.x += src_rect.w;
         src_rect.w = -src_rect.w;
     }
-    Renderer.Sprite.draw(self.sprite, src_rect, dst_rect);
+    Renderer.Sprite.draw(sprite, src_rect, dst_rect);
 }
 
 pub fn handleInput(player: *Player, room: Room, attribs: []const Tile.Attrib, input: Input, prev_input: Input) void {

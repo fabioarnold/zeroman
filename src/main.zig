@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const web = @import("web.zig");
+const keys = @import("keys.zig");
 
 const Renderer = @import("Renderer.zig");
 const Rect2 = Renderer.Rect2;
@@ -31,6 +32,20 @@ const GameState = enum {
     start,
     playing,
     gameover,
+
+    pub fn jsonStringify(value: GameState, options: std.json.StringifyOptions, out_stream: anytype) !void {
+        _ = options;
+        try out_stream.writeByte('"');
+        try out_stream.writeAll(std.meta.tagName(value));
+        try out_stream.writeByte('"');
+    }
+};
+
+const RoomTransition = enum(u8) {
+    none,
+    vertical,
+    door_ltr,
+    door_rtl,
 };
 
 const door_duration = 16;
@@ -40,7 +55,7 @@ var mode_frame: i32 = 0;
 const GameData = struct {
     state: GameState = .start,
     counter: u8 = 0, // number of frames to wait in a state
-    player: Player = .{ .sprite = undefined },
+    player: Player = .{},
     prev_input: Player.Input,
 
     cur_room_index: u8 = 0,
@@ -73,17 +88,34 @@ const GameData = struct {
         self.scrollr.x = cur_stage.rooms[self.cur_room_index].bounds.x;
         self.scrollr.y = cur_stage.rooms[self.cur_room_index].bounds.y;
         uploadRoomTexture(&cur_room_tex, cur_stage.rooms[self.cur_room_index]);
-        clearText();
+    }
+
+    fn saveSnapshot(self: GameData) void {
+        var buf: [1000]u8 = undefined; // FIXME
+        var stream = std.io.fixedBufferStream(&buf);
+        std.json.stringify(self, .{}, stream.writer()) catch unreachable;
+        web.LocalStorage.setString("snapshot", stream.getWritten());
+        web.consoleLog("snapshot saved", .{});
+    }
+
+    fn loadSnapshot(self: *GameData) void {
+        const value = web.LocalStorage.getString("snapshot");
+        var ts = std.json.TokenStream.init(value);
+        self.* = std.json.parse(GameData, &ts, .{
+            .ignore_unknown_fields = true,
+        }) catch unreachable;
+        uploadRoomTexture(&cur_room_tex, cur_stage.rooms[self.cur_room_index]); // FIXME
+        web.consoleLog("snapshot loaded", .{});
     }
 
     fn tickStart(self: *GameData) void {
-        const blink_text = if (self.counter % 40 < 20) "READY" else "     ";
-        setText(blink_text, text_w / 2 - 2, text_h / 2);
+        if (self.counter % 40 < 20) {
+            setText("READY", text_w / 2 - 2, text_h / 2);
+        }
         self.counter += 1;
         if (self.counter == 120) {
             self.counter = 0;
             self.state = .playing;
-            clearText();
         }
     }
 
@@ -217,6 +249,7 @@ const GameData = struct {
     }
 
     fn tick(self: *GameData) void {
+        clearText();
         switch (self.state) {
             .start => self.tickStart(),
             .playing => self.tickPlaying(),
@@ -227,19 +260,6 @@ const GameData = struct {
 
 var game_data = GameData{ .prev_input = undefined };
 var cur_stage: Stage = needleman;
-
-export fn onInit() void {
-    Renderer.init();
-    game_data.player.load();
-    door_sprite.loadFromUrl("img/door.png", 16, 16);
-    tiles_tex.loadFromUrl("img/needleman.png", 12, 11);
-    effects_tex.loadFromUrl("img/effects.png", 120, 24);
-    font_tex.loadFromUrl("img/font.png", 16, 8);
-    clearText();
-    text_tex.loadFromData(text_buffer[0..], text_w, text_h);
-
-    game_data.reset();
-}
 
 fn uploadRoomTexture(texture: *Renderer.Texture, room: Room) void {
     texture.loadFromData(room.data, room.width, room.height);
@@ -254,8 +274,29 @@ fn setText(text: []const u8, x: usize, y: usize) void {
     std.mem.copy(u8, text_buffer[text_w * y + x ..], text);
 }
 
+export fn onInit() void {
+    Renderer.init();
+    Player.load();
+    door_sprite.loadFromUrl("img/door.png", 16, 16);
+    tiles_tex.loadFromUrl("img/needleman.png", 12, 11);
+    effects_tex.loadFromUrl("img/effects.png", 120, 24);
+    font_tex.loadFromUrl("img/font.png", 16, 8);
+    clearText();
+    text_tex.loadFromData(text_buffer[0..], text_w, text_h);
+
+    game_data.reset();
+}
+
 export fn onResize(width: c_uint, height: c_uint, scale: f32) void {
     Renderer.resize(@intToFloat(f32, width), @intToFloat(f32, height), scale);
+}
+
+export fn onKeyDown(key: c_uint) void {
+    switch (key) {
+        keys.KEY_L => game_data.loadSnapshot(),
+        keys.KEY_S => game_data.saveSnapshot(),
+        else => {},
+    }
 }
 
 fn updatePlayer(player: *Player) void {
@@ -288,17 +329,6 @@ fn updatePlayer(player: *Player) void {
     }
     if (game_data.scrollr.x < room.bounds.x) game_data.scrollr.x = room.bounds.x;
     if (game_data.scrollr.x > room.bounds.x + room.bounds.w - screen_width) game_data.scrollr.x = room.bounds.x + room.bounds.w - screen_width;
-}
-
-const RoomTransition = enum(u8) {
-    none,
-    vertical,
-    door_ltr,
-    door_rtl,
-};
-
-fn tick() void {
-    game_data.tick();
 }
 
 // Find a room which overlaps box
@@ -400,7 +430,7 @@ fn drawRoom(room: Room, room_tex: Renderer.Texture, door1_h: u8, door2_h: u8) vo
 }
 
 export fn onAnimationFrame() void {
-    tick();
+    game_data.tick();
     Renderer.beginDraw();
     draw();
     Renderer.endDraw();

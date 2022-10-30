@@ -19,7 +19,6 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      cursor: none;
     }
     canvas {
       display: block;
@@ -60,6 +59,8 @@
       // ...zigdom,
       ...webgl,
       jsConsoleLog,
+      jsStorageSetString,
+      jsStorageGetString,
       isKeyDown,
       isButtonDown,
     }
@@ -83,24 +84,37 @@
     }
 
     function jsConsoleLog(ptr, len) {
-      let str = readCharStr(ptr, len);
+      const str = readCharStr(ptr, len);
       console.log(str);
     }
 
-    function onKeyDown(e) {
-      // e.repeat
-      disableTouchControls();
-      pressedKeys[e.keyCode] = true;
+    function jsStorageSetString(keyPtr, keyLen, valuePtr, valueLen) {
+      const key = readCharStr(keyPtr, keyLen);
+      const value = readCharStr(valuePtr, valueLen);
+      localStorage.setItem(key, value);
     }
 
-    function onKeyUp(e) {
-      pressedKeys[e.keyCode] = false;
+    function jsStorageGetString(keyPtr, keyLen, valuePtr, valueLen) {
+      const key = readCharStr(keyPtr, keyLen);
+      const value = localStorage.getItem(key);
+      return writeCharStr(value, valuePtr, valueLen);
     }
 
     const readCharStr = (ptr, len) => {
-      const array = new Uint8Array(memory.buffer, ptr, len)
-      const decoder = new TextDecoder()
-      return decoder.decode(array)
+      const array = new Uint8Array(memory.buffer, ptr, len);
+      const decoder = new TextDecoder();
+      return decoder.decode(array);
+    }
+
+    const writeCharStr = (str, ptr, len) => {
+      const dest = new Uint8Array(memory.buffer, ptr, len)
+      const encoder = new TextEncoder()
+      const array = encoder.encode(str);
+      len = Math.min(array.length, len);
+      for (let i = 0; i < len; i++) {
+          dest[i] = array[i];
+      }
+      return len;
     }
 
     fetchAndInstantiate('zig-out/lib/main.wasm', { env }).then(instance => {
@@ -124,6 +138,17 @@
       resize();
 
       const onAnimationFrame = instance.exports.onAnimationFrame;
+
+      function onKeyDown(e) {
+        // e.repeat
+        disableTouchControls();
+        pressedKeys[e.keyCode] = true;
+        instance.exports.onKeyDown(e.keyCode);
+      }
+
+      function onKeyUp(e) {
+        pressedKeys[e.keyCode] = false;
+      }
 
       document.addEventListener('keydown', onKeyDown);
       document.addEventListener('keyup', onKeyUp);
