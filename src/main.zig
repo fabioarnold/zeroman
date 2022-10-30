@@ -285,6 +285,9 @@ export fn onInit() void {
     text_tex.loadFromData(text_buffer[0..], text_w, text_h);
 
     game_data.reset();
+    if (web.hasLoadSnapshot()) {
+        game_data.loadSnapshot();
+    }
 }
 
 export fn onResize(width: c_uint, height: c_uint, scale: f32) void {

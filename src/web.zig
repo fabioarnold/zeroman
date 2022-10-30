@@ -22,5 +22,6 @@ pub const LocalStorage = struct {
 extern fn jsConsoleLog(ptr: usize, len: usize) void;
 extern fn jsStorageSetString(key_ptr: usize, key_len: usize, value_ptr: usize, value_len: usize) void;
 extern fn jsStorageGetString(key_ptr: usize, key_len: usize, value_ptr: usize, value_len: usize) usize;
+pub extern fn hasLoadSnapshot() bool;
 pub extern fn isKeyDown(key_code: c_uint) bool;
 pub extern fn isButtonDown(button_index: c_uint) bool;

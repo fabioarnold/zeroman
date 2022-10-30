@@ -61,6 +61,7 @@
       jsConsoleLog,
       jsStorageSetString,
       jsStorageGetString,
+      hasLoadSnapshot,
       isKeyDown,
       isButtonDown,
     }
@@ -98,6 +99,11 @@
       const key = readCharStr(keyPtr, keyLen);
       const value = localStorage.getItem(key);
       return writeCharStr(value, valuePtr, valueLen);
+    }
+
+    function hasLoadSnapshot() {
+      const params = new URLSearchParams(location.search);
+      return params.has('loadSnapshot');
     }
 
     const readCharStr = (ptr, len) => {
