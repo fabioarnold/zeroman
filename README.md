@@ -1,14 +1,19 @@
 # Zero Man
 
-## Get the source
+A basic Mega Man clone with Zero as the main character.
+
+Try it: https://fabioarnold.de/games/zeroman/
+
+## Building and running
 
 ```bash
-$ git clone --recursive https://github.com/fabioarnold/zeroman
-```
+# Get the source
+$ git clone https://github.com/fabioarnold/zeroman
 
-## Build `zig-out/lib/main.wasm`
-
-```bash
+# Build `zig-out/lib/main.wasm`
 $ cd zeroman
 $ zig build
+
+# Run an HTTP server
+$ python3 -m http.server
 ```
