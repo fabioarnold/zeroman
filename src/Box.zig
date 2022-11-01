@@ -5,6 +5,10 @@ y: i32,
 w: i32,
 h: i32,
 
+pub fn init(x: i32, y: i32, w: i32, h: i32) Box {
+    return Box{ .x = x, .y = y, .w = w, .h = h };
+}
+
 pub fn overlap(self: Box, other: Box) bool {
     return self.x < other.x + other.w and self.x + self.w > other.x and self.y < other.y + other.h and self.y + self.h > other.y;
 }

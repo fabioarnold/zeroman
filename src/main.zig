@@ -5,6 +5,7 @@ const keys = @import("keys.zig");
 
 const Renderer = @import("Renderer.zig");
 const Rect2 = Renderer.Rect2;
+const Sprite = Renderer.Sprite;
 const Box = @import("Box.zig");
 const Tile = @import("Tile.zig");
 const Room = @import("Room.zig");
@@ -16,6 +17,10 @@ const screen_width = 256;
 const screen_height = 240;
 
 var door_sprite: Renderer.Texture = undefined;
+var spike_sprite: Renderer.Texture = undefined;
+const spike_x = 256 + 8*16 + 8 + 32;
+const spike_y = 240 + 168;
+
 var tiles_tex: Renderer.Texture = undefined;
 var prev_room_tex: Renderer.Texture = undefined;
 var cur_room_tex: Renderer.Texture = undefined;
@@ -82,6 +87,7 @@ const GameData = struct {
         self.player.vx = 0;
         self.player.vy = Player.vmax;
         self.player.state = .jumping;
+        self.player.face_left = false;
         self.prev_input = std.mem.zeroes(Player.Input);
         self.cur_room_index = 0;
         self.prev_room_index = 0;
@@ -103,7 +109,7 @@ const GameData = struct {
         var ts = std.json.TokenStream.init(value);
         self.* = std.json.parse(GameData, &ts, .{
             .ignore_unknown_fields = true,
-        }) catch unreachable;
+        }) catch return;
         uploadRoomTexture(&cur_room_tex, cur_stage.rooms[self.cur_room_index]); // FIXME
         web.consoleLog("snapshot loaded", .{});
     }
@@ -120,7 +126,11 @@ const GameData = struct {
     }
 
     fn tickGameOver(self: *GameData) void {
-        setText("GAME OVER", text_w / 2 - 4, text_h / 2);
+        if (self.counter > 60) {
+            setText("GAME OVER", text_w / 2 - 4, text_h / 2);
+        } else {
+            self.counter += 1;
+        }
         const input = Player.Input.scanKeyboard().combine(Player.Input.scanGamepad());
         if (input.jump and !self.prev_input.jump) {
             self.reset();
@@ -206,6 +216,7 @@ const GameData = struct {
         if (!cur_room.bounds.overlap(self.player.box)) {
             if (self.player.box.y > cur_room.bounds.y + cur_room.bounds.h) {
                 self.state = .gameover;
+                self.counter = 0;
                 death_frame_counter = 0;
                 return;
             }
@@ -246,6 +257,14 @@ const GameData = struct {
                 }
             }
         }
+
+        // check spike
+        const spike_box = Box.init(spike_x, spike_y, 16, 24);
+        if (self.player.box.overlap(spike_box)) {
+            game_data.state = .gameover;
+            self.counter = 0;
+            death_frame_counter = 0;
+        }
     }
 
     fn tick(self: *GameData) void {
@@ -278,6 +297,7 @@ export fn onInit() void {
     Renderer.init();
     Player.load();
     door_sprite.loadFromUrl("img/door.png", 16, 16);
+    spike_sprite.loadFromUrl("img/spike.png", 16, 24);
     tiles_tex.loadFromUrl("img/needleman.png", 12, 11);
     effects_tex.loadFromUrl("img/effects.png", 120, 24);
     font_tex.loadFromUrl("img/font.png", 16, 8);
@@ -356,14 +376,14 @@ fn setNextRoom(next_room_index: u8) void {
 var death_frame_counter: u32 = 0;
 fn drawDeathEffect(x: f32, y: f32) void {
     const frame = (death_frame_counter / 3) % 6;
-    const src_rect = Renderer.Rect2.init(@intToFloat(f32, frame) * 24, 0, 24, 24);
+    const src_rect = Rect2.init(@intToFloat(f32, frame) * 24, 0, 24, 24);
 
     var i: usize = 0;
     while (i < 8) : (i += 1) {
         const angle: f32 = std.math.pi * @intToFloat(f32, i) / 4.0;
         const r: f32 = 2 * @intToFloat(f32, death_frame_counter);
-        const dst_rect = Renderer.Rect2.init(x + r * @sin(angle), y + r * @cos(angle), 24, 24);
-        Renderer.Sprite.draw(effects_tex, src_rect, dst_rect);
+        const dst_rect = Rect2.init(x + r * @sin(angle), y + r * @cos(angle), 24, 24);
+        Sprite.draw(effects_tex, src_rect, dst_rect);
     }
 
     death_frame_counter += 1;
@@ -381,8 +401,12 @@ fn draw() void {
 
     drawRoom(cur_stage.rooms[game_data.cur_room_index], cur_room_tex, game_data.door1_h, game_data.door2_h);
 
+    Sprite.draw(spike_sprite, Rect2.init(0, 0, 16, 24), Rect2.init(spike_x, spike_y, 16, 24));
+
     if (game_data.state != .start) {
-        game_data.player.draw();
+        if (game_data.state != .gameover or (death_frame_counter < 40 and death_frame_counter % 8 < 4)) {
+            game_data.player.draw();
+        }
     }
 
     if (game_data.state == .gameover) {
