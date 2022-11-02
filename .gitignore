@@ -1,3 +1,4 @@
 zig-cache
 main.wasm
 main.o
+/dep/

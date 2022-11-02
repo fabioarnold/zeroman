@@ -15,5 +15,5 @@ $ cd zeroman
 $ zig build
 
 # Run an HTTP server
-$ python3 -m http.server
+$ zig build serve
 ```
