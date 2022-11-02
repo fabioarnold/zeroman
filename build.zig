@@ -7,6 +7,7 @@ pub fn build(b: *std.build.Builder) void {
     wasm.setBuildMode(mode);
     wasm.setTarget(.{ .cpu_arch = .wasm32, .os_tag = .freestanding });
     wasm.install();
+    b.step("wasm", "build/install the wasm file").dependOn(&wasm.install_step.?.step);
 
     {
         const apple_pie = GitRepoStep.create(b, .{

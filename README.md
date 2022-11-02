@@ -16,4 +16,6 @@ $ zig build
 
 # Run an HTTP server
 $ zig build serve
+
+# NOTE that the HTTP server will automatically rebuild the game whenever it is fetched
 ```
