@@ -42,10 +42,10 @@ pub const Input = struct {
 
     pub fn scanKeyboard() Input {
         return .{
-            .left = web.isKeyDown(keys.KEY_LEFT),
-            .right = web.isKeyDown(keys.KEY_RIGHT),
-            .up = web.isKeyDown(keys.KEY_UP),
-            .down = web.isKeyDown(keys.KEY_DOWN),
+            .left = web.isKeyDown(keys.KEY_LEFT) or web.isKeyDown(keys.KEY_A),
+            .right = web.isKeyDown(keys.KEY_RIGHT) or web.isKeyDown(keys.KEY_D),
+            .up = web.isKeyDown(keys.KEY_UP) or web.isKeyDown(keys.KEY_W),
+            .down = web.isKeyDown(keys.KEY_DOWN) or web.isKeyDown(keys.KEY_S),
             .jump = web.isKeyDown(keys.KEY_SPACE),
         };
     }
