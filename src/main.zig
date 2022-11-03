@@ -316,8 +316,8 @@ export fn onResize(width: c_uint, height: c_uint, scale: f32) void {
 
 export fn onKeyDown(key: c_uint) void {
     switch (key) {
-        keys.KEY_L => game_data.loadSnapshot(),
-        keys.KEY_S => game_data.saveSnapshot(),
+        keys.KEY_2 => game_data.loadSnapshot(),
+        keys.KEY_1 => game_data.saveSnapshot(),
         else => {},
     }
 }
