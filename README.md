@@ -2,7 +2,7 @@
 
 A basic Mega Man clone with Zero as the main character.
 
-Try it: https://fabioarnold.de/games/zeroman/
+Try it: https://zeroman.space
 
 ## Building and running
 
