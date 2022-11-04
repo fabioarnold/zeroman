@@ -1,0 +1,28 @@
+name: Nightly Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    - cron: '0 5 * * *' # run at 5 AM UTC
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: master
+      - run: zig fmt --check src/**/*.zig
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: master
+      - run: zig build
