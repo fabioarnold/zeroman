@@ -77,6 +77,7 @@ state: State = .idle,
 anim_time: i32 = 0,
 slide_frames: u8 = 0,
 face_left: bool = false,
+no_clip: bool = false,
 
 pub fn load() void {
     sprite.loadFromUrl("img/zero.png", 224, 32);
@@ -147,13 +148,27 @@ pub fn draw(self: *Player) void {
     Renderer.Sprite.draw(sprite, src_rect, dst_rect);
 }
 
-pub fn handleInput(player: *Player, room: Room, attribs: []const Tile.Attrib, input: Input, prev_input: Input) void {
-    switch (player.state) {
-        .idle, .running, .jumping => doMovement(player, room, attribs, input, prev_input),
-        .climbing => doClimbing(player, room, attribs, input, prev_input),
-        .sliding => doSliding(player, room, attribs, input, prev_input),
-        else => {},
+pub fn handleInput(self: *Player, room: Room, attribs: []const Tile.Attrib, input: Input, prev_input: Input) void {
+    if (self.no_clip) {
+        self.doNoClipMovement(input);
+    } else {
+        switch (self.state) {
+            .idle, .running, .jumping => self.doMovement(room, attribs, input, prev_input),
+            .climbing => self.doClimbing(room, attribs, input, prev_input),
+            .sliding => self.doSliding(room, attribs, input, prev_input),
+            else => {},
+        }
     }
+}
+
+fn doNoClipMovement(self: *Player, input: Input) void {
+    self.state = .jumping;
+    self.vx = 0;
+    self.vy = 0;
+    if (input.left) self.vx -= 0x400;
+    if (input.right) self.vx += 0x400;
+    if (input.up) self.vy -= 0x400;
+    if (input.down) self.vy += 0x400;
 }
 
 fn doMovement(player: *Player, room: Room, attribs: []const Tile.Attrib, input: Input, prev_input: Input) void {

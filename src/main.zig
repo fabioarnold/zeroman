@@ -18,7 +18,7 @@ const screen_height = 240;
 
 var door_sprite: Renderer.Texture = undefined;
 var spike_sprite: Renderer.Texture = undefined;
-const spike_x = 256 + 8*16 + 8 + 32;
+const spike_x = 256 + 8 * 16 + 8 + 32;
 const spike_y = 240 + 168;
 
 var tiles_tex: Renderer.Texture = undefined;
@@ -193,6 +193,14 @@ const GameData = struct {
         }
     }
 
+    fn killPlayer(self: *GameData) void {
+        if (!self.player.no_clip) {
+            self.state = .gameover;
+            self.counter = 0;
+            death_frame_counter = 0;
+        }
+    }
+
     fn tickPlaying(self: *GameData) void {
         if (room_transition != .none) {
             switch (room_transition) {
@@ -215,9 +223,7 @@ const GameData = struct {
         const cur_room = cur_stage.rooms[self.cur_room_index];
         if (!cur_room.bounds.overlap(self.player.box)) {
             if (self.player.box.y > cur_room.bounds.y + cur_room.bounds.h) {
-                self.state = .gameover;
-                self.counter = 0;
-                death_frame_counter = 0;
+                self.killPlayer();
                 return;
             }
         }
@@ -261,9 +267,7 @@ const GameData = struct {
         // check spike
         const spike_box = Box.init(spike_x, spike_y, 16, 24);
         if (self.player.box.overlap(spike_box)) {
-            game_data.state = .gameover;
-            self.counter = 0;
-            death_frame_counter = 0;
+            self.killPlayer();
         }
     }
 
@@ -316,8 +320,9 @@ export fn onResize(width: c_uint, height: c_uint, scale: f32) void {
 
 export fn onKeyDown(key: c_uint) void {
     switch (key) {
-        keys.KEY_2 => game_data.loadSnapshot(),
         keys.KEY_1 => game_data.saveSnapshot(),
+        keys.KEY_2 => game_data.loadSnapshot(),
+        keys.KEY_3 => game_data.player.no_clip = !game_data.player.no_clip,
         else => {},
     }
 }
@@ -334,14 +339,19 @@ fn updatePlayer(player: *Player) void {
 
     // physics
     const amount_x = player.vx >> 8;
-    const clipped_x = room.clipX(cur_stage.attribs, player.box, amount_x);
-    player.box.x += clipped_x;
     const amount_y = player.vy >> 8;
-    const clipped_y = room.clipY(cur_stage.attribs, player.box, amount_y);
-    player.box.y += clipped_y;
-    const blocked_y = clipped_y != amount_y;
+    if (player.no_clip) {
+        player.box.x += amount_x;
+        player.box.y += amount_y;
+    } else {
+        const clipped_x = room.clipX(cur_stage.attribs, player.box, amount_x);
+        player.box.x += clipped_x;
+        const clipped_y = room.clipY(cur_stage.attribs, player.box, amount_y);
+        player.box.y += clipped_y;
+        const blocked_y = clipped_y != amount_y;
 
-    if (blocked_y and player.vy < 0) player.vy = 0; // bump head
+        if (blocked_y and player.vy < 0) player.vy = 0; // bump head
+    }
 
     // scrolling
     if (player.box.x != player_old_x) {
