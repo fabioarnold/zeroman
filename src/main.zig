@@ -63,6 +63,7 @@ var mode_frame: i32 = 0;
 const GameData = struct {
     state: GameState = .title,
     counter: u8 = 0, // number of frames to wait in a state
+    title_any_key_pressed: bool = false,
     player: Player = .{},
     prev_input: Player.Input,
 
@@ -118,8 +119,16 @@ const GameData = struct {
     }
 
     fn tickTitle(self: *GameData) void {
-        _ = self;
-        setText("PRESS ANY KEY", text_w / 2 - 6, text_h / 2 + 3);
+        if (self.counter % 8 < 4) {
+            setText("PRESS ANY KEY", text_w / 2 - 6, text_h / 2 + 3);
+        }
+        if (self.title_any_key_pressed) {
+            self.counter += 1;
+        }
+        if (self.counter == 80) {
+            self.counter = 0;
+            self.state = .start;
+        }
     }
 
     fn tickStart(self: *GameData) void {
@@ -331,7 +340,7 @@ export fn onResize(width: c_uint, height: c_uint, scale: f32) void {
 
 export fn onKeyDown(key: c_uint) void {
     if (game_data.state == .title) {
-        game_data.state = .start;
+        game_data.title_any_key_pressed = true;
     }
     switch (key) {
         keys.KEY_1 => game_data.saveSnapshot(),
