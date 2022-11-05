@@ -327,7 +327,7 @@ export fn onInit() void {
     title_tex.loadFromUrl("img/title.png", 192, 56);
     door_sprite.loadFromUrl("img/door.png", 16, 16);
     spike_sprite.loadFromUrl("img/spike.png", 16, 24);
-    tiles_tex.loadFromUrl("img/needleman.png", 12, 11);
+    tiles_tex.loadFromUrl("img/needleman.png", 16, 8);
     effects_tex.loadFromUrl("img/effects.png", 120, 24);
     font_tex.loadFromUrl("img/font.png", 16, 8);
     clearText();
