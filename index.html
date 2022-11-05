@@ -171,17 +171,18 @@
     });
 
     function fetchAndInstantiate(url, importObject) {
-        return fetch(url)
+      return fetch(url)
         .then(response => {
-            if (response.headers.get("content-type") == "application/wasm")
-                return response.arrayBuffer();
+          const contentType = response.headers.get("content-type");
+          if (contentType == "application/wasm" || contentType == "application/octet-stream")
+              return response.arrayBuffer();
 
-            response.text().then(text => {
-                var html = '<h1>Fetch ' + url + ' failed:</h1>';
-                html += '<pre>' + text + '</pre>';
-                document.body.innerHTML = html;
-            });
-            throw Error("failed to fetch wasm file");
+          response.text().then(text => {
+            var html = '<h1>Fetch ' + url + ' failed:</h1>';
+            html += '<pre>' + text + '</pre>';
+            document.body.innerHTML = html;
+          });
+          throw Error("failed to fetch wasm file");
         })
         .then(bytes => WebAssembly.instantiate(bytes, importObject))
         .then(results => results.instance);
