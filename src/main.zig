@@ -16,6 +16,8 @@ const needleman = @import("stages/needleman.zig").needleman;
 const screen_width = 256;
 const screen_height = 240;
 
+var title_tex: Renderer.Texture = undefined;
+
 var door_sprite: Renderer.Texture = undefined;
 var spike_sprite: Renderer.Texture = undefined;
 const spike_x = 256 + 8 * 16 + 8 + 32;
@@ -34,6 +36,7 @@ const text_h = screen_height / 8;
 var text_buffer: [text_w * text_h]u8 = undefined;
 
 const GameState = enum {
+    title,
     start,
     playing,
     gameover,
@@ -58,7 +61,7 @@ var room_transition: RoomTransition = .none;
 var mode_frame: i32 = 0;
 
 const GameData = struct {
-    state: GameState = .start,
+    state: GameState = .title,
     counter: u8 = 0, // number of frames to wait in a state
     player: Player = .{},
     prev_input: Player.Input,
@@ -112,6 +115,11 @@ const GameData = struct {
         }) catch return;
         uploadRoomTexture(&cur_room_tex, cur_stage.rooms[self.cur_room_index]); // FIXME
         web.consoleLog("snapshot loaded", .{});
+    }
+
+    fn tickTitle(self: *GameData) void {
+        _ = self;
+        setText("PRESS ANY KEY", text_w / 2 - 6, text_h / 2 + 3);
     }
 
     fn tickStart(self: *GameData) void {
@@ -274,6 +282,7 @@ const GameData = struct {
     fn tick(self: *GameData) void {
         clearText();
         switch (self.state) {
+            .title => self.tickTitle(),
             .start => self.tickStart(),
             .playing => self.tickPlaying(),
             .gameover => self.tickGameOver(),
@@ -300,6 +309,7 @@ fn setText(text: []const u8, x: usize, y: usize) void {
 export fn onInit() void {
     Renderer.init();
     Player.load();
+    title_tex.loadFromUrl("img/title.png", 192, 56);
     door_sprite.loadFromUrl("img/door.png", 16, 16);
     spike_sprite.loadFromUrl("img/spike.png", 16, 24);
     tiles_tex.loadFromUrl("img/needleman.png", 12, 11);
@@ -309,6 +319,7 @@ export fn onInit() void {
     text_tex.loadFromData(text_buffer[0..], text_w, text_h);
 
     game_data.reset();
+    game_data.state = .title;
     if (web.hasLoadSnapshot()) {
         game_data.loadSnapshot();
     }
@@ -319,6 +330,9 @@ export fn onResize(width: c_uint, height: c_uint, scale: f32) void {
 }
 
 export fn onKeyDown(key: c_uint) void {
+    if (game_data.state == .title) {
+        game_data.state = .start;
+    }
     switch (key) {
         keys.KEY_1 => game_data.saveSnapshot(),
         keys.KEY_2 => game_data.loadSnapshot(),
@@ -399,28 +413,37 @@ fn drawDeathEffect(x: f32, y: f32) void {
     death_frame_counter += 1;
 }
 
+fn drawTitle() void {
+    Sprite.draw(title_tex, Rect2.init(0, 0, 192, 56), Rect2.init(32, 64, 192, 56));
+}
+
 fn draw() void {
     Renderer.clear();
-    Renderer.scroll.x = @intToFloat(f32, game_data.scrollr.x);
-    Renderer.scroll.y = @intToFloat(f32, game_data.scrollr.y);
 
-    // prev room is visible during transition
-    if (room_transition != .none) {
-        drawRoom(cur_stage.rooms[game_data.prev_room_index], prev_room_tex, game_data.door2_h, game_data.door1_h);
-    }
+    if (game_data.state == .title) {
+        drawTitle();
+    } else {
+        Renderer.scroll.x = @intToFloat(f32, game_data.scrollr.x);
+        Renderer.scroll.y = @intToFloat(f32, game_data.scrollr.y);
 
-    drawRoom(cur_stage.rooms[game_data.cur_room_index], cur_room_tex, game_data.door1_h, game_data.door2_h);
-
-    Sprite.draw(spike_sprite, Rect2.init(0, 0, 16, 24), Rect2.init(spike_x, spike_y, 16, 24));
-
-    if (game_data.state != .start) {
-        if (game_data.state != .gameover or (death_frame_counter < 40 and death_frame_counter % 8 < 4)) {
-            game_data.player.draw();
+        // prev room is visible during transition
+        if (room_transition != .none) {
+            drawRoom(cur_stage.rooms[game_data.prev_room_index], prev_room_tex, game_data.door2_h, game_data.door1_h);
         }
-    }
 
-    if (game_data.state == .gameover) {
-        drawDeathEffect(@intToFloat(f32, game_data.player.box.x) - 4, @intToFloat(f32, game_data.player.box.y));
+        drawRoom(cur_stage.rooms[game_data.cur_room_index], cur_room_tex, game_data.door1_h, game_data.door2_h);
+
+        Sprite.draw(spike_sprite, Rect2.init(0, 0, 16, 24), Rect2.init(spike_x, spike_y, 16, 24));
+
+        if (game_data.state != .start) {
+            if (game_data.state != .gameover or (death_frame_counter < 40 and death_frame_counter % 8 < 4)) {
+                game_data.player.draw();
+            }
+        }
+
+        if (game_data.state == .gameover) {
+            drawDeathEffect(@intToFloat(f32, game_data.player.box.x) - 4, @intToFloat(f32, game_data.player.box.y));
+        }
     }
 
     // text layer

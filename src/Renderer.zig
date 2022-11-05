@@ -268,7 +268,7 @@ pub fn resize(width: f32, height: f32, scale: f32) void {
 }
 
 pub fn clear() void {
-    gl.glClearColor(0.5, 0.5, 0.5, 1);
+    gl.glClearColor(0, 0, 0, 1);
     gl.glClear(gl.GL_COLOR_BUFFER_BIT);
 }
 
