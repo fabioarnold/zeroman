@@ -124,6 +124,10 @@ const GameData = struct {
         if (self.counter % 8 < 4) {
             setText("PRESS ANY KEY", text_w / 2 - 6, text_h / 2 + 3);
         }
+        const input = Player.Input.combine(Player.Input.scanKeyboard(), Player.Input.scanGamepad());
+        if (input.left or input.right or input.up or input.down or input.jump) {
+            self.title_any_key_pressed = true;
+        }
         if (self.title_any_key_pressed) {
             self.counter += 1;
         }
