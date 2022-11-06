@@ -15,6 +15,8 @@ const needleman = @import("stages/needleman.zig").needleman;
 
 const screen_width = 256;
 const screen_height = 240;
+const target_frame_time = 1.0 / 60.0;
+const min_frame_time = 1.0 / 10.0;
 
 var title_tex: Renderer.Texture = undefined;
 
@@ -498,8 +500,18 @@ fn drawRoom(room: Room, room_tex: Renderer.Texture, door1_h: u8, door2_h: u8) vo
     }
 }
 
-export fn onAnimationFrame() void {
-    game_data.tick();
+var prev_timestamp: f64 = 0;
+var tick_time: f64 = 0;
+
+export fn onAnimationFrame(timestamp_ms: f64) void {
+    const timestamp = timestamp_ms / 1000.0;
+    const delta_time = timestamp - prev_timestamp;
+    prev_timestamp = timestamp;
+    tick_time += @min(min_frame_time, delta_time);
+    while (tick_time > 0) : (tick_time -= target_frame_time) {
+        game_data.tick();
+    }
+
     Renderer.beginDraw();
     draw();
     Renderer.endDraw();
