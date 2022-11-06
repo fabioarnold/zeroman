@@ -84,12 +84,7 @@ const GameData = struct {
     fn reset(self: *GameData) void {
         self.state = .start;
         self.counter = 0;
-        self.player.box = Box{
-            .x = (screen_width - Player.width) / 2,
-            .y = screen_height - Player.height, // 432 - Player.height - 32,
-            .w = Player.width,
-            .h = Player.height,
-        };
+        self.player.box.h = Player.height;
         self.player.vx = 0;
         self.player.vy = Player.vmax;
         self.player.state = .jumping;
@@ -99,6 +94,8 @@ const GameData = struct {
         self.prev_room_index = 0;
         self.scrollr.x = cur_stage.rooms[self.cur_room_index].bounds.x;
         self.scrollr.y = cur_stage.rooms[self.cur_room_index].bounds.y;
+        self.player.box.x = self.scrollr.x + (screen_width - Player.width) / 2;
+        self.player.box.y = self.scrollr.y - Player.height;
         uploadRoomTexture(&cur_room_tex, cur_stage.rooms[self.cur_room_index]);
     }
 
