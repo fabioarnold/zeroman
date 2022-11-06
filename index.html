@@ -62,6 +62,9 @@
   <script src="js/webgl.js"></script>
   <!-- <script src="js/wasm.js"></script> -->
   <script>
+    document.ondblclick = function(e) {
+      e.preventDefault();
+    }
     const env = {
       // ...wasm,
       // ...audio,
