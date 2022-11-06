@@ -3,7 +3,8 @@
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=0"/>
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=0" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Zero Man</title>
   <link rel="icon" type="image/x-icon" href="img/favicon.ico">
@@ -15,17 +16,21 @@
       user-select: none;
       -webkit-user-select: none;
     }
+
     body {
       width: 100%;
       height: 100%;
       overflow: hidden;
     }
+
     canvas {
       display: block;
     }
+
     .touchcontrol {
       display: none;
     }
+
     .touchcontrol-enabled {
       display: block;
     }
@@ -35,13 +40,18 @@
 <body>
   <canvas id="canvasgl"></canvas>
   <svg class="touchcontrol" style="position:absolute;height:min(45vw,45vh);bottom:5%;left:5%;" viewBox="0 0 30 30">
-    <path d="M0 10 V20 H9 L14 15 9 10 Z" fill="#fff4" onpointerenter="pressedKeys[37]=true" onpointerleave="pressedKeys[37]=false" />
-    <path d="M20 0 H10 V9 L15 14 20 9 Z" fill="#fff4" onpointerenter="pressedKeys[38]=true" onpointerleave="pressedKeys[38]=false" />
-    <path d="M30 20 V10 H21 L16 15 21 20 Z" fill="#fff4" onpointerenter="pressedKeys[39]=true" onpointerleave="pressedKeys[39]=false" />
-    <path d="M10 30 H20 V21 L15 16 10 21 Z" fill="#fff4" onpointerenter="pressedKeys[40]=true" onpointerleave="pressedKeys[40]=false" />
+    <path d="M0 10 V20 H9 L14 15 9 10 Z" fill="#fff4" onpointerenter="pressedKeys[37]=true"
+      onpointerleave="pressedKeys[37]=false" />
+    <path d="M20 0 H10 V9 L15 14 20 9 Z" fill="#fff4" onpointerenter="pressedKeys[38]=true"
+      onpointerleave="pressedKeys[38]=false" />
+    <path d="M30 20 V10 H21 L16 15 21 20 Z" fill="#fff4" onpointerenter="pressedKeys[39]=true"
+      onpointerleave="pressedKeys[39]=false" />
+    <path d="M10 30 H20 V21 L15 16 10 21 Z" fill="#fff4" onpointerenter="pressedKeys[40]=true"
+      onpointerleave="pressedKeys[40]=false" />
   </svg>
   <svg class="touchcontrol" style="position:absolute;height:min(45vw,45vh);bottom:5%;right:5%;" viewBox="0 0 30 30">
-    <circle cx="15" cy="15" r="10" fill="#fff4" onpointerenter="pressedKeys[32]=true" onpointerleave="pressedKeys[32]=false"/>
+    <circle cx="15" cy="15" r="10" fill="#fff4" onpointerenter="pressedKeys[32]=true"
+      onpointerleave="pressedKeys[32]=false" />
   </svg>
   <script>
     var $canvasgl = document.getElementById("canvasgl");
@@ -118,7 +128,7 @@
       const array = encoder.encode(str);
       len = Math.min(array.length, len);
       for (let i = 0; i < len; i++) {
-          dest[i] = array[i];
+        dest[i] = array[i];
       }
       return len;
     }
@@ -175,7 +185,7 @@
         .then(response => {
           const contentType = response.headers.get("content-type");
           if (contentType == "application/wasm" || contentType == "application/octet-stream")
-              return response.arrayBuffer();
+            return response.arrayBuffer();
 
           response.text().then(text => {
             var html = '<h1>Fetch ' + url + ' failed:</h1>';
@@ -211,7 +221,7 @@
     }, false);
 
     document.addEventListener("contextmenu", function (e) {
-        e.preventDefault();
+      e.preventDefault();
     }, false);
   </script>
 </body>
