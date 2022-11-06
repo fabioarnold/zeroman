@@ -348,11 +348,13 @@ export fn onKeyDown(key: c_uint) void {
     if (game_data.state == .title) {
         game_data.title_any_key_pressed = true;
     }
-    switch (key) {
-        keys.KEY_1 => game_data.saveSnapshot(),
-        keys.KEY_2 => game_data.loadSnapshot(),
-        keys.KEY_3 => game_data.player.no_clip = !game_data.player.no_clip,
-        else => {},
+    if (builtin.mode == .Debug) {
+        switch (key) {
+            keys.KEY_1 => game_data.saveSnapshot(),
+            keys.KEY_2 => game_data.loadSnapshot(),
+            keys.KEY_3 => game_data.player.no_clip = !game_data.player.no_clip,
+            else => {},
+        }
     }
 }
 
