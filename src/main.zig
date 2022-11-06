@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const web = @import("web.zig");
 const keys = @import("keys.zig");
@@ -331,7 +332,9 @@ export fn onInit() void {
     text_tex.loadFromData(text_buffer[0..], text_w, text_h);
 
     game_data.reset();
-    game_data.state = .title;
+    if (builtin.mode != .Debug) {
+        game_data.state = .title;
+    }
     if (web.hasLoadSnapshot()) {
         game_data.loadSnapshot();
     }
