@@ -505,7 +505,7 @@ fn drawRoom(room: Room, room_tex: Renderer.Texture, door1_h: u8, door2_h: u8) vo
 }
 
 var prev_timestamp: f64 = 0;
-var tick_time: f64 = 0;
+var tick_time: f64 = 0.5 * target_frame_time;
 
 export fn onAnimationFrame(timestamp_ms: f64) void {
     const timestamp = timestamp_ms / 1000.0;
