@@ -15,6 +15,11 @@ pub fn build(b: *std.build.Builder) void {
         process_assets.addStage("maps/stages/needleman/needleman.world");
         wasm.step.dependOn(&process_assets.step);
     }
+    {
+        // format generated files
+        const fmt_step = std.build.FmtStep.create(b, &.{"src/stages/needleman.zig"});
+        wasm.step.dependOn(&fmt_step.step);
+    }
 
     {
         const apple_pie = GitRepoStep.create(b, .{
