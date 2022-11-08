@@ -485,7 +485,7 @@ fn drawRoom(room: Room, room_tex: Renderer.Texture, door1_h: u8, door2_h: u8) vo
         while (i < door1_h) : (i += 1) {
             const dst_rect = Rect2.init(
                 @intToFloat(f32, room.bounds.x),
-                @intToFloat(f32, @intCast(u32, room.bounds.y) + (room.door1_y + i) * Tile.size),
+                @intToFloat(f32, room.bounds.y + @intCast(i32, room.door1_y + i) * Tile.size),
                 Tile.size,
                 Tile.size,
             );
@@ -497,7 +497,7 @@ fn drawRoom(room: Room, room_tex: Renderer.Texture, door1_h: u8, door2_h: u8) vo
         while (i < door2_h) : (i += 1) {
             const dst_rect = Rect2.init(
                 @intToFloat(f32, room.bounds.x + room.bounds.w - Tile.size),
-                @intToFloat(f32, @intCast(u32, room.bounds.y) + (room.door2_y + i) * Tile.size),
+                @intToFloat(f32, room.bounds.y + @intCast(i32, room.door2_y + i) * Tile.size),
                 Tile.size,
                 Tile.size,
             );

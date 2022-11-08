@@ -28,7 +28,7 @@ const MapJson = struct {
         type: []const u8,
 
         const ObjectJson = struct {
-            // class: []const u8,
+            class: ?[]const u8 = null,
             x: i32,
             y: i32,
         };
@@ -130,6 +130,15 @@ fn make(step: *std.build.Step) !void {
                         try writer.print("{d}, ", .{d - 1});
                     }
                     try writer.writeAll("\n      },\n");
+                } else if (layer.objects) |objects| {
+                    for (objects) |object| {
+                        const class = object.class orelse continue;
+                        if (std.mem.eql(u8, class, "door")) {
+                            const door_num: i32 = if (object.x == 0) 1 else 2;
+                            const door_y = @divFloor(object.y - 16, 16);
+                            try writer.print("      .door{}_y = {},\n", .{door_num, door_y});
+                        }
+                    }
                 }
             }
             try writer.writeAll("    },\n");
