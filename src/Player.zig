@@ -263,7 +263,7 @@ fn doClimbing(player: *Player, room: Room, attribs: []const Tile.Attrib, input: 
     const sense_x = player.box.x + @divTrunc(player.box.w, 2);
     const sense_y = player.box.y + @divTrunc(player.box.h, 2);
     if (room.getTileAttribAtPixel(attribs, sense_x, sense_y) == .none) {
-        const tile_y = @divTrunc(sense_y, Tile.size);
+        const tile_y = @divFloor(sense_y, Tile.size);
         if (room.getTileAttribAtPixel(attribs, sense_x, (tile_y + 1) * Tile.size) == .ladder) {
             // top edge of ladder -> snap player's y position
             player.box.y = tile_y * Tile.size - 8;
