@@ -21,46 +21,10 @@
  "tiledversion":"1.7.2",
  "tileheight":16,
  "tilesets":[
-        {
-         "columns":12,
-         "firstgid":1,
-         "image":"tiles.png",
-         "imageheight":176,
-         "imagewidth":192,
-         "margin":0,
-         "name":"tiles",
-         "spacing":0,
-         "tilecount":132,
-         "tileheight":16,
-         "tiles":[
-                {
-                 "id":2,
-                 "objectgroup":
-                    {
-                     "draworder":"index",
-                     "id":2,
-                     "name":"",
-                     "objects":[
-                            {
-                             "height":16,
-                             "id":2,
-                             "name":"",
-                             "rotation":0,
-                             "type":"",
-                             "visible":true,
-                             "width":16,
-                             "x":0,
-                             "y":0
-                            }],
-                     "opacity":1,
-                     "type":"objectgroup",
-                     "visible":true,
-                     "x":0,
-                     "y":0
-                    }
-                }],
-         "tilewidth":16
-        }],
+       {
+        "firstgid":1,
+        "source":"..\/..\/tilesets\/needleman.tsj"
+       }],
  "tilewidth":16,
  "type":"map",
  "version":"1.6",

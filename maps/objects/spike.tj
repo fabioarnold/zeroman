@@ -1,0 +1,18 @@
+{ "object":
+    {
+     "class":"spike",
+     "gid":1,
+     "height":24,
+     "id":1,
+     "name":"",
+     "rotation":0,
+     "visible":true,
+     "width":16
+    },
+ "tileset":
+    {
+     "firstgid":1,
+     "source":"..\/tilesets\/spike.tsj"
+    },
+ "type":"template"
+}

@@ -1,29 +1,36 @@
 {
     "maps": [
         {
-            "fileName": "room1.json",
+            "fileName": "room0.json",
             "height": 240,
             "width": 768,
             "x": 0,
             "y": 0
         },
         {
-            "fileName": "room2.json",
+            "fileName": "room1.json",
             "height": 240,
             "width": 1792,
             "x": 512,
             "y": 240
         },
         {
-            "fileName": "room3.json",
+            "fileName": "room2.json",
             "height": 240,
             "width": 768,
             "x": 2048,
             "y": 480
         },
         {
+            "fileName": "room3.json",
+            "height": 240,
+            "width": 256,
+            "x": 2560,
+            "y": 240
+        },
+        {
             "fileName": "room4.json",
-            "height": 480,
+            "height": 240,
             "width": 256,
             "x": 2560,
             "y": 0

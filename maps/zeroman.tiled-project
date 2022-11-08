@@ -1,12 +1,23 @@
 {
     "automappingRulesFile": "",
     "commands": [
+        {
+            "arguments": "build",
+            "command": "/opt/homebrew/bin/zig",
+            "enabled": true,
+            "name": "zig build",
+            "saveBeforeExecute": true,
+            "shortcut": "⌘B",
+            "showOutput": true,
+            "workingDirectory": "/Users/fabio/Developer/zeroman"
+        }
     ],
     "extensionsPath": "extensions",
     "folders": [
-        "needleman"
+        "stages",
+        "tilesets",
+        "objects"
     ],
-    "objectTypesFile": "",
     "propertyTypes": [
     ]
 }
