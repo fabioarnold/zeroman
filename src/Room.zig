@@ -118,8 +118,8 @@ pub fn overlap(self: Room, attribs: []const Tile.Attrib, mover: Box) bool {
 }
 
 pub fn getTileAttribAtPixel(self: Room, attribs: []const Tile.Attrib, x: i32, y: i32) Tile.Attrib {
-    const tx = @divTrunc(x - self.bounds.x, Tile.size);
-    const ty = @divTrunc(y - self.bounds.y, Tile.size);
+    const tx = @divFloor(x - self.bounds.x, Tile.size);
+    const ty = @divFloor(y - self.bounds.y, Tile.size);
     return self.getTileAttribAtTile(attribs, tx, ty);
 }
 
