@@ -1,0 +1,14 @@
+{ "columns":1,
+ "image":"..\/..\/img\/spike.png",
+ "imageheight":24,
+ "imagewidth":16,
+ "margin":0,
+ "name":"spike",
+ "spacing":0,
+ "tilecount":1,
+ "tiledversion":"1.9.2",
+ "tileheight":24,
+ "tilewidth":16,
+ "type":"tileset",
+ "version":"1.9"
+}

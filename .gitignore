@@ -1,4 +1,6 @@
 zig-cache
+zig-out
 main.wasm
 main.o
-/dep/
+/dep
+*.tiled-session
