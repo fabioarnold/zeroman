@@ -29,6 +29,7 @@ const MapJson = struct {
 
         const ObjectJson = struct {
             class: ?[]const u8 = null,
+            template: ?[]const u8 = null,
             x: i32,
             y: i32,
         };
@@ -97,6 +98,7 @@ fn make(step: *std.build.Step) !void {
 
         try writer.writeAll("const Box = @import(\"../Box.zig\");\n");
         try writer.writeAll("const Tile = @import(\"../Tile.zig\");\n");
+        try writer.writeAll("const Entity = @import(\"../Entity.zig\");\n");
         try writer.writeAll("const Room = @import(\"../Room.zig\");\n");
         try writer.writeAll("const Stage = @import(\"../Stage.zig\");\n\n");
 
@@ -131,12 +133,30 @@ fn make(step: *std.build.Step) !void {
                     }
                     try writer.writeAll("\n      },\n");
                 } else if (layer.objects) |objects| {
+                    try writer.writeAll("      .entities = &[_]Entity{\n");
+                    for (objects) |object| {
+                        const template = object.template orelse continue;
+                        if (std.mem.endsWith(u8, template, "spike.tj")) {
+                            try writer.writeAll("        Entity{\n");
+                            try writer.writeAll("          .class = .spike,\n");
+                            try writer.print("          .box = Box{{ .x = {}, .y = {}, .w = {}, .h = {} }},\n", .{
+                                object.x,
+                                object.y - 24,
+                                16,
+                                24,
+                            });
+                            try writer.writeAll("        },\n");
+                        }
+                    }
+                    try writer.writeAll("      },\n");
+
+                    // doors
                     for (objects) |object| {
                         const class = object.class orelse continue;
                         if (std.mem.eql(u8, class, "door")) {
                             const door_num: i32 = if (object.x == 0) 1 else 2;
                             const door_y = @divFloor(object.y - 16, 16);
-                            try writer.print("      .door{}_y = {},\n", .{door_num, door_y});
+                            try writer.print("      .door{}_y = {},\n", .{ door_num, door_y });
                         }
                     }
                 }

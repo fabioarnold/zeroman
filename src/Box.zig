@@ -1,3 +1,5 @@
+const Rect2 = @import("Renderer.zig").Rect2;
+
 const Box = @This();
 
 x: i32,
@@ -7,6 +9,15 @@ h: i32,
 
 pub fn init(x: i32, y: i32, w: i32, h: i32) Box {
     return Box{ .x = x, .y = y, .w = w, .h = h };
+}
+
+pub fn toRect2(self: Box) Rect2 {
+    return .{
+        .x = @intToFloat(f32, self.x),
+        .y = @intToFloat(f32, self.y),
+        .w = @intToFloat(f32, self.w),
+        .h = @intToFloat(f32, self.h),
+    };
 }
 
 pub fn overlap(self: Box, other: Box) bool {

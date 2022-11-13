@@ -18,6 +18,7 @@
         "tilesets",
         "objects"
     ],
+    "objectTypesFile": "",
     "propertyTypes": [
     ]
 }

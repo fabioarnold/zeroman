@@ -23,8 +23,6 @@ var title_tex: Renderer.Texture = undefined;
 
 var door_sprite: Renderer.Texture = undefined;
 var spike_sprite: Renderer.Texture = undefined;
-const spike_x = 256 + 8 * 16 + 8 + 32;
-const spike_y = 240 + 168;
 
 var tiles_tex: Renderer.Texture = undefined;
 var prev_room_tex: Renderer.Texture = undefined;
@@ -285,10 +283,13 @@ const GameData = struct {
             }
         }
 
-        // check spike
-        const spike_box = Box.init(spike_x, spike_y, 16, 24);
-        if (self.player.box.overlap(spike_box)) {
-            self.killPlayer();
+        // check spikes
+        for (cur_room.entities) |entity| {
+            if (entity.class == .spike) {
+                if (self.player.box.overlap(entity.box)) {
+                    self.killPlayer();
+                }
+            }
         }
     }
 
@@ -450,8 +451,6 @@ fn draw() void {
 
         drawRoom(cur_stage.rooms[game_data.cur_room_index], cur_room_tex, game_data.door1_h, game_data.door2_h);
 
-        Sprite.draw(spike_sprite, Rect2.init(0, 0, 16, 24), Rect2.init(spike_x, spike_y, 16, 24));
-
         if (game_data.state != .start) {
             if (game_data.state != .gameover or (death_frame_counter < 40 and death_frame_counter % 8 < 4)) {
                 game_data.player.draw();
@@ -472,13 +471,7 @@ fn draw() void {
 }
 
 fn drawRoom(room: Room, room_tex: Renderer.Texture, door1_h: u8, door2_h: u8) void {
-    const rect = Rect2.init(
-        @intToFloat(f32, room.bounds.x),
-        @intToFloat(f32, room.bounds.y),
-        @intToFloat(f32, room.bounds.w),
-        @intToFloat(f32, room.bounds.h),
-    );
-    Renderer.Tilemap.draw(room_tex, tiles_tex, rect);
+    Renderer.Tilemap.draw(room_tex, tiles_tex, room.bounds.toRect2());
 
     if (room.door1_y != Room.no_door) {
         var i: usize = 0;
@@ -502,6 +495,12 @@ fn drawRoom(room: Room, room_tex: Renderer.Texture, door1_h: u8, door2_h: u8) vo
                 Tile.size,
             );
             Renderer.Sprite.draw(door_sprite, Rect2.init(0, 0, Tile.size, Tile.size), dst_rect);
+        }
+    }
+
+    for (room.entities) |entity| {
+        switch (entity.class) {
+            .spike => Sprite.draw(spike_sprite, Rect2.init(0, 0, 16, 24), entity.box.toRect2()),
         }
     }
 }

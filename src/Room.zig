@@ -2,6 +2,7 @@ const std = @import("std");
 
 const Box = @import("Box.zig");
 const Tile = @import("Tile.zig");
+const Entity = @import("Entity.zig");
 
 const Room = @This();
 
@@ -12,6 +13,8 @@ bounds: Box,
 width: u8,
 height: u8,
 data: []const u8,
+
+entities: []const Entity = &.{},
 
 door1_y: u8 = no_door,
 door2_y: u8 = no_door,

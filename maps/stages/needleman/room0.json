@@ -34,16 +34,21 @@
          "name":"Object Layer 1",
          "objects":[
                 {
-                 "class":"spike",
                  "id":1,
                  "template":"..\/..\/objects\/spike.tj",
-                 "x":432,
+                 "x":192,
                  "y":192
                 }, 
                 {
                  "id":2,
                  "template":"..\/..\/objects\/spike.tj",
                  "x":464,
+                 "y":192
+                }, 
+                {
+                 "id":3,
+                 "template":"..\/..\/objects\/spike.tj",
+                 "x":240,
                  "y":192
                 }],
          "opacity":1,
@@ -53,7 +58,7 @@
          "y":0
         }],
  "nextlayerid":3,
- "nextobjectid":3,
+ "nextobjectid":4,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.9.2",
@@ -62,9 +67,9 @@
         {
          "firstgid":1,
          "source":"..\/..\/tilesets\/needleman.tsj"
-        },
+        }, 
         {
-         "firstgid":133,
+         "firstgid":129,
          "source":"..\/..\/tilesets\/spike.tsj"
         }],
  "tilewidth":16,
