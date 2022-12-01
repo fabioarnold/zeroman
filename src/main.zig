@@ -69,7 +69,8 @@ const GameData = struct {
     counter: u8 = 0, // number of frames to wait in a state
     title_any_key_pressed: bool = false,
     player: Player = .{},
-    prev_input: Player.Input,
+    input: Player.Input = std.mem.zeroes(Player.Input),
+    prev_input: Player.Input = std.mem.zeroes(Player.Input),
 
     cur_room_index: u8 = 0,
     prev_room_index: u8 = 0,
@@ -91,6 +92,7 @@ const GameData = struct {
         self.player.vy = Player.vmax;
         self.player.state = .jumping;
         self.player.face_left = false;
+        self.input = std.mem.zeroes(Player.Input);
         self.prev_input = std.mem.zeroes(Player.Input);
         self.cur_room_index = 0;
         self.prev_room_index = 0;
@@ -123,8 +125,7 @@ const GameData = struct {
         if (self.counter % 8 < 4) {
             setText("PRESS ANY KEY", text_w / 2 - 6, text_h / 2 + 3);
         }
-        const input = Player.Input.combine(Player.Input.scanKeyboard(), Player.Input.scanGamepad());
-        if (input.left or input.right or input.up or input.down or input.jump) {
+        if (self.input.left or self.input.right or self.input.up or self.input.down or self.input.jump) {
             self.title_any_key_pressed = true;
         }
         if (self.title_any_key_pressed) {
@@ -150,12 +151,12 @@ const GameData = struct {
     fn tickGameOver(self: *GameData) void {
         if (self.counter > 60) {
             setText("GAME OVER", text_w / 2 - 4, text_h / 2);
+
+            if (self.input.jump and !self.prev_input.jump) {
+                self.reset();
+            }
         } else {
             self.counter += 1;
-        }
-        const input = Player.Input.scanKeyboard().combine(Player.Input.scanGamepad());
-        if (input.jump and !self.prev_input.jump) {
-            self.reset();
         }
     }
 
@@ -298,6 +299,8 @@ const GameData = struct {
 
     fn tick(self: *GameData) void {
         clearText();
+        self.prev_input = self.input;
+        self.input = Player.Input.combine(Player.Input.scanKeyboard(), Player.Input.scanGamepad());
         switch (self.state) {
             .title => self.tickTitle(),
             .start => self.tickStart(),
@@ -307,7 +310,7 @@ const GameData = struct {
     }
 };
 
-var game_data = GameData{ .prev_input = undefined };
+var game_data = GameData{};
 var cur_stage: Stage = needleman;
 
 fn uploadRoomTexture(texture: *Renderer.Texture, room: Room) void {
@@ -368,9 +371,7 @@ fn updatePlayer(player: *Player) void {
     const room = cur_stage.rooms[game_data.cur_room_index];
     const player_old_x = player.box.x;
 
-    const input = Player.Input.scanKeyboard().combine(Player.Input.scanGamepad());
-    player.handleInput(room, cur_stage.attribs, input, game_data.prev_input);
-    game_data.prev_input = input;
+    player.handleInput(room, cur_stage.attribs, game_data.input, game_data.prev_input);
 
     // physics
     const amount_x = player.vx >> 8;
