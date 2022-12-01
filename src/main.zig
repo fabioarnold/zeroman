@@ -103,7 +103,7 @@ const GameData = struct {
         var stream = std.io.fixedBufferStream(&buf);
         std.json.stringify(self, .{}, stream.writer()) catch unreachable;
         web.LocalStorage.setString("snapshot", stream.getWritten());
-        web.consoleLog("snapshot saved", .{});
+        std.log.info("snapshot saved", .{});
     }
 
     fn loadSnapshot(self: *GameData) void {
@@ -113,7 +113,7 @@ const GameData = struct {
             .ignore_unknown_fields = true,
         }) catch return;
         uploadRoomTexture(&cur_room_tex, cur_stage.rooms[self.cur_room_index]); // FIXME
-        web.consoleLog("snapshot loaded", .{});
+        std.log.info("snapshot loaded", .{});
     }
 
     fn tickTitle(self: *GameData) void {
@@ -520,4 +520,23 @@ export fn onAnimationFrame(timestamp_ms: f64) void {
     Renderer.beginDraw();
     draw();
     Renderer.endDraw();
+}
+
+pub fn log(
+    comptime message_level: std.log.Level,
+    comptime scope: @Type(.EnumLiteral),
+    comptime format: []const u8,
+    args: anytype,
+) void {
+    const level_txt = comptime message_level.asText();
+    const prefix = if (scope == .default) ": " else "(" ++ @tagName(scope) ++ "): ";
+    const log_fmt = level_txt ++ prefix ++ format;
+    var buf: [400]u8 = undefined;
+    if (std.fmt.bufPrint(&buf, log_fmt, args)) |msg| {
+        web.jsConsoleLog(@ptrToInt(msg.ptr), msg.len);
+    } else |_| {
+        const drop_msg = "dropped log message too long, next message is its format string";
+        web.jsConsoleLog(@ptrToInt(drop_msg), drop_msg.len);
+        web.jsConsoleLog(@ptrToInt(log_fmt), log_fmt.len);
+    }
 }
