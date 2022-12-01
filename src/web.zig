@@ -1,10 +1,6 @@
 const std = @import("std");
 
-const WriteError = error{
-    NoSpaceLeft,
-};
-
-fn writeLog(_: void, msg: []const u8) WriteError!usize {
+fn writeLog(_: void, msg: []const u8) !usize {
     jsLogWrite(msg.ptr, msg.len);
     return msg.len;
 }
@@ -23,7 +19,7 @@ pub fn log(
     };
     const prefix = if (scope == .default) ": " else "(" ++ @tagName(scope) ++ "): ";
 
-    const writer = std.io.Writer(void, WriteError, writeLog){.context = {}};
+    const writer = std.io.Writer(void, error{}, writeLog){.context = {}};
     writer.print(level_txt ++ prefix ++ format ++ "\n", args) catch return;
 
     jsLogFlush();
