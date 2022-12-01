@@ -14,6 +14,9 @@ const Stage = @import("Stage.zig");
 const Player = @import("Player.zig");
 const needleman = @import("stages/needleman.zig").needleman;
 
+// Overwrite default log handler
+pub const log = web.log;
+
 const screen_width = 256;
 const screen_height = 240;
 const target_frame_time = 1.0 / 60.0;
@@ -520,23 +523,4 @@ export fn onAnimationFrame(timestamp_ms: f64) void {
     Renderer.beginDraw();
     draw();
     Renderer.endDraw();
-}
-
-pub fn log(
-    comptime message_level: std.log.Level,
-    comptime scope: @Type(.EnumLiteral),
-    comptime format: []const u8,
-    args: anytype,
-) void {
-    const level_txt = comptime message_level.asText();
-    const prefix = if (scope == .default) ": " else "(" ++ @tagName(scope) ++ "): ";
-    const log_fmt = level_txt ++ prefix ++ format;
-    var buf: [400]u8 = undefined;
-    if (std.fmt.bufPrint(&buf, log_fmt, args)) |msg| {
-        web.jsConsoleLog(@ptrToInt(msg.ptr), msg.len);
-    } else |_| {
-        const drop_msg = "dropped log message too long, next message is its format string";
-        web.jsConsoleLog(@ptrToInt(drop_msg), drop_msg.len);
-        web.jsConsoleLog(@ptrToInt(log_fmt), log_fmt.len);
-    }
 }

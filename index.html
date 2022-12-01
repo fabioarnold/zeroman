@@ -66,41 +66,16 @@
     document.ondblclick = function(e) {
       e.preventDefault();
     }
-    const env = {
-      // ...wasm,
-      // ...audio,
-      // ...canvas,
-      // ...zigdom,
-      ...webgl,
-      jsConsoleLog,
-      jsStorageSetString,
-      jsStorageGetString,
-      hasLoadSnapshot,
-      isKeyDown,
-      isButtonDown,
+
+    let logString = '';
+
+    const jsLogWrite = (ptr, len) => {
+        logString += readCharStr(ptr, len)
     }
 
-    let pressedKeys = {};
-    function isKeyDown(keyCode) {
-      return pressedKeys[keyCode] == true;
-    }
-
-    function isButtonDown(buttonIndex) {
-      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-      if (gamepads.length > 0) {
-        const gamepad = gamepads[0];
-        if (gamepad) {
-          if (buttonIndex < gamepad.buttons.length) {
-            return gamepad.buttons[buttonIndex].pressed;
-          }
-        }
-      }
-      return false;
-    }
-
-    function jsConsoleLog(ptr, len) {
-      const str = readCharStr(ptr, len);
-      console.log(str);
+    const jsLogFlush = () => {
+        console.log(logString)
+        logString = ''
     }
 
     function jsStorageSetString(keyPtr, keyLen, valuePtr, valueLen) {
@@ -135,6 +110,39 @@
         dest[i] = array[i];
       }
       return len;
+    }
+
+    const env = {
+      // ...wasm,
+      // ...audio,
+      // ...canvas,
+      // ...zigdom,
+      ...webgl,
+      jsLogWrite,
+      jsLogFlush,
+      jsStorageSetString,
+      jsStorageGetString,
+      hasLoadSnapshot,
+      isKeyDown,
+      isButtonDown,
+    }
+
+    let pressedKeys = {};
+    function isKeyDown(keyCode) {
+      return pressedKeys[keyCode] == true;
+    }
+
+    function isButtonDown(buttonIndex) {
+      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+      if (gamepads.length > 0) {
+        const gamepad = gamepads[0];
+        if (gamepad) {
+          if (buttonIndex < gamepad.buttons.length) {
+            return gamepad.buttons[buttonIndex].pressed;
+          }
+        }
+      }
+      return false;
     }
 
     fetchAndInstantiate('zig-out/lib/main.wasm', { env }).then(instance => {
