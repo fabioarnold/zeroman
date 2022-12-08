@@ -29,7 +29,6 @@ pub fn build(b: *std.build.Builder) void {
             .fetch_enabled = true,
         });
         const exe = b.addExecutable("webserver", "webserver.zig");
-        exe.use_stage1 = true; // apple_pie currently only works with stage1
         exe.step.dependOn(&apple_pie.step);
         exe.addPackagePath("apple_pie", b.pathJoin(&.{apple_pie.getPath(&exe.step), "src", "apple_pie.zig"}));
         const run = exe.run();
