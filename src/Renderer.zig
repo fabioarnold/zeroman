@@ -1,12 +1,7 @@
 const gl = @import("webgl.zig");
 
-var video_width: f32 = 1280;
-var video_height: f32 = 720;
-var video_scale: f32 = 1;
 const fb_width = 256;
 const fb_height = 240;
-var fbo: gl.GLuint = undefined;
-var fbo_tex: gl.GLuint = undefined;
 var blit_vbo: gl.GLuint = undefined;
 
 pub var scroll: Vec2 = Vec2.init(0, 0);
@@ -17,11 +12,6 @@ const identity_matrix = [16]f32{
     0, 0, 1, 0,
     0, 0, 0, 1,
 };
-
-var blit_scaled: struct {
-    program: gl.GLuint,
-    scale_loc: gl.GLint,
-} = undefined;
 
 var blit2d: struct {
     program: gl.GLuint,
@@ -122,7 +112,7 @@ pub const Sprite = struct {
     pub fn draw(sprite: Texture, src_rect: Rect2, dst_rect: Rect2) void {
         const x = dst_rect.x - scroll.x;
         const y = dst_rect.y - scroll.y;
-        const px = 2.0 / @as(f32, fb_width);
+        const px: f32 = 2.0 / @as(f32, fb_width);
         const py: f32 = 2.0 / @as(f32, fb_height);
         const mvp = [16]f32{
             px * dst_rect.w, 0,                0, 0,
@@ -204,23 +194,11 @@ pub fn init() void {
     gl.glEnable(gl.GL_BLEND);
     gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA);
 
-    gl.glGenFramebuffers(1, &fbo);
-    gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, fbo);
-    gl.glGenTextures(1, &fbo_tex);
-    gl.glBindTexture(gl.GL_TEXTURE_2D, fbo_tex);
-    gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, fb_width, fb_height, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, null, 0);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST);
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST);
-    gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0, gl.GL_TEXTURE_2D, fbo_tex, 0);
-    gl.glBindTexture(gl.GL_TEXTURE_2D, 0);
-    gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0);
-
     const color_frag_src = @embedFile("shaders/color.frag");
     const tex_frag_src = @embedFile("shaders/tex.frag");
     const tiled_frag_src = @embedFile("shaders/tiled.frag");
     const transform_vert_src = @embedFile("shaders/transform.vert");
     const textransform_vert_src = @embedFile("shaders/textransform.vert");
-    const scale_vert_src = @embedFile("shaders/scale.vert");
     colored.program = loadShader(transform_vert_src, color_frag_src);
     gl.glUseProgram(colored.program);
     colored.color_loc = gl.glGetUniformLocation(colored.program, "u_color", "u_color".len);
@@ -229,9 +207,6 @@ pub fn init() void {
     gl.glUseProgram(blit2d.program);
     blit2d.mvp_loc = gl.glGetUniformLocation(blit2d.program, "u_mvp", "u_mvp".len);
     blit2d.texmat_loc = gl.glGetUniformLocation(blit2d.program, "u_texmat", "u_texmat".len);
-    blit_scaled.program = loadShader(scale_vert_src, tex_frag_src);
-    gl.glUseProgram(blit_scaled.program);
-    blit_scaled.scale_loc = gl.glGetUniformLocation(blit_scaled.program, "u_scale", "u_scale".len);
     tiled.program = loadShader(textransform_vert_src, tiled_frag_src);
     gl.glUseProgram(tiled.program);
     tiled.map_loc = gl.glGetUniformLocation(tiled.program, "u_map", "u_map".len);
@@ -261,39 +236,7 @@ pub fn init() void {
     gl.glVertexAttribPointer(0, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, null);
 }
 
-pub fn resize(width: f32, height: f32, scale: f32) void {
-    video_width = width;
-    video_height = height;
-    video_scale = scale;
-}
-
 pub fn clear() void {
     gl.glClearColor(0, 0, 0, 1);
     gl.glClear(gl.GL_COLOR_BUFFER_BIT);
-}
-
-pub fn beginDraw() void {
-    gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, fbo);
-    gl.glViewport(0, 0, fb_width, fb_height);
-}
-
-pub fn endDraw() void {
-    gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0);
-
-    const fb_ar = @intToFloat(f32, fb_width) / @intToFloat(f32, fb_height);
-    const video_ar = video_width / video_height;
-
-    gl.glViewport(0, 0, @floatToInt(u32, video_scale * video_width), @floatToInt(u32, video_scale * video_height));
-    gl.glClearColor(0, 0, 0, 0);
-    gl.glClear(gl.GL_COLOR_BUFFER_BIT);
-    gl.glUseProgram(blit_scaled.program);
-    if (fb_ar < video_ar) {
-        gl.glUniform2f(blit_scaled.scale_loc, fb_ar / video_ar, 1.0);
-    } else {
-        gl.glUniform2f(blit_scaled.scale_loc, 1.0, video_ar / fb_ar);
-    }
-    gl.glBindTexture(gl.GL_TEXTURE_2D, fbo_tex);
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, blit_vbo);
-    gl.glVertexAttribPointer(0, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, null);
-    gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4);
 }

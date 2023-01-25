@@ -18,14 +18,18 @@
     }
 
     body {
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       overflow: hidden;
       background-color: black;
     }
 
     canvas {
       display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
     }
 
     .touchcontrol {
@@ -39,7 +43,7 @@
 </head>
 
 <body>
-  <canvas id="canvasgl"></canvas>
+  <canvas id="canvasgl" width="256" height="240"></canvas>
   <svg class="touchcontrol" style="position:absolute;height:min(45vw,45vh);bottom:5%;left:5%;" viewBox="0 0 30 30">
     <path d="M0 10 V20 H9 L14 15 9 10 Z" fill="#fff4" onpointerenter="pressedKeys[37]=true"
       onpointerleave="pressedKeys[37]=false" />
@@ -149,22 +153,6 @@
       memory = instance.exports.memory;
       instance.exports.onInit();
 
-      function resize() {
-        let width = window.innerWidth;
-        let height = window.innerHeight;
-        if (window.visualViewport) {
-          width = window.visualViewport.width;
-          height = window.visualViewport.height;
-        }
-        $canvasgl.width = window.devicePixelRatio * width;
-        $canvasgl.height = window.devicePixelRatio * height;
-        $canvasgl.style.width = width + "px";
-        $canvasgl.style.height = height + "px";
-        instance.exports.onResize(width, height, window.devicePixelRatio);
-      }
-      window.addEventListener('resize', resize, false);
-      resize();
-
       const onAnimationFrame = instance.exports.onAnimationFrame;
 
       function onKeyDown(e) {
@@ -180,9 +168,6 @@
 
       document.addEventListener('keydown', onKeyDown);
       document.addEventListener('keyup', onKeyUp);
-      // document.addEventListener('mousedown', e => instance.exports.onMouseDown(e.button, e.x, e.y));
-      // document.addEventListener('mouseup', e => instance.exports.onMouseUp(e.button, e.x, e.y));
-      // document.addEventListener('mousemove', e => instance.exports.onMouseMove(e.x, e.y));
 
       function step(timestamp) {
         onAnimationFrame(timestamp);

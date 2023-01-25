@@ -345,10 +345,6 @@ export fn onInit() void {
     }
 }
 
-export fn onResize(width: c_uint, height: c_uint, scale: f32) void {
-    Renderer.resize(@intToFloat(f32, width), @intToFloat(f32, height), scale);
-}
-
 export fn onKeyDown(key: c_uint) void {
     if (game_data.state == .title) {
         game_data.title_any_key_pressed = true;
@@ -519,7 +515,5 @@ export fn onAnimationFrame(timestamp_ms: f64) void {
         game_data.tick();
     }
 
-    Renderer.beginDraw();
     draw();
-    Renderer.endDraw();
 }
