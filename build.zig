@@ -3,12 +3,15 @@ const ProcessAssetsStep = @import("ProcessAssetsStep.zig");
 const GitRepoStep = @import("GitRepoStep.zig");
 
 pub fn build(b: *std.build.Builder) void {
-    const mode = b.standardReleaseOptions();
-    const wasm = b.addSharedLibrary("main", "src/main.zig", .unversioned);
-    wasm.setBuildMode(mode);
-    wasm.setTarget(.{ .cpu_arch = .wasm32, .os_tag = .freestanding });
-    wasm.install();
+    const optimize = b.standardOptimizeOption(.{});
+    const wasm = b.addSharedLibrary(.{
+        .name = "main",
+        .root_source_file = .{ .path = "src/main.zig" },
+        .target = .{ .cpu_arch = .wasm32, .os_tag = .freestanding },
+        .optimize = optimize,
+    });
     wasm.rdynamic = true;
+    wasm.install();
     b.step("wasm", "build/install the wasm file").dependOn(&wasm.install_step.?.step);
 
     {
@@ -18,8 +21,8 @@ pub fn build(b: *std.build.Builder) void {
     }
     {
         // format generated files
-        const fmt_step = std.build.FmtStep.create(b, &.{"src/stages/needleman.zig"});
-        wasm.step.dependOn(&fmt_step.step);
+        const fmt = b.addFmt(&.{"src/stages/needleman.zig"});
+        wasm.step.dependOn(&fmt.step);
     }
 
     {
@@ -29,9 +32,12 @@ pub fn build(b: *std.build.Builder) void {
             .sha = "5eaaabdced4f9b8d6cee947b465e7ea16ea61f42",
             .fetch_enabled = true,
         });
-        const exe = b.addExecutable("webserver", "webserver.zig");
+        const exe = b.addExecutable(.{
+            .name = "webserver",
+            .root_source_file = .{ .path = "webserver.zig" },
+        });
         exe.step.dependOn(&apple_pie.step);
-        exe.addPackagePath("apple_pie", b.pathJoin(&.{apple_pie.getPath(&exe.step), "src", "apple_pie.zig"}));
+        exe.addPackagePath("apple_pie", b.pathJoin(&.{ apple_pie.getPath(&exe.step), "src", "apple_pie.zig" }));
         const run = exe.run();
         run.addArg(b.build_root);
         b.step("serve", "Serve the game files").dependOn(&run.step);
