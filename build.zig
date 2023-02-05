@@ -2,7 +2,7 @@ const std = @import("std");
 const ProcessAssetsStep = @import("ProcessAssetsStep.zig");
 const GitRepoStep = @import("GitRepoStep.zig");
 
-pub fn build(b: *std.build.Builder) void {
+pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const wasm = b.addSharedLibrary(.{
         .name = "main",
@@ -37,7 +37,8 @@ pub fn build(b: *std.build.Builder) void {
             .root_source_file = .{ .path = "webserver.zig" },
         });
         exe.step.dependOn(&apple_pie.step);
-        exe.addPackagePath("apple_pie", b.pathJoin(&.{ apple_pie.getPath(&exe.step), "src", "apple_pie.zig" }));
+        const apple_pie_mod = b.createModule(.{ .source_file = .{ .path = b.pathJoin(&.{ apple_pie.getPath(&exe.step), "src", "apple_pie.zig" }) } });
+        exe.addModule("apple_pie", apple_pie_mod);
         const run = exe.run();
         run.addArg(b.build_root);
         b.step("serve", "Serve the game files").dependOn(&run.step);
