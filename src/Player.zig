@@ -68,7 +68,7 @@ pub const height = 24;
 const jump_speed = -0x04A5; // mega man 3
 pub const vmax = 0x0700;
 
-var sprite: Renderer.Texture = undefined;
+pub var sprite: Renderer.Texture = undefined;
 
 box: Box = .{ .x = 0, .y = 0, .w = width, .h = height },
 vx: i32 = 0, // fixed point
@@ -80,7 +80,7 @@ face_left: bool = false,
 no_clip: bool = false,
 
 pub fn load() void {
-    sprite.loadFromUrl("img/zero.png", 224, 32);
+    sprite.loadFromUrl("img/zero.png", 256, 32);
 }
 
 pub fn tick(self: *Player) void {

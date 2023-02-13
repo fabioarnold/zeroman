@@ -50,6 +50,12 @@
                  "template":"..\/..\/objects\/spike.tj",
                  "x":240,
                  "y":192
+                }, 
+                {
+                 "id":4,
+                 "template":"..\/..\/objects\/zero.tj",
+                 "x":116,
+                 "y":192
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -58,7 +64,7 @@
          "y":0
         }],
  "nextlayerid":3,
- "nextobjectid":4,
+ "nextobjectid":5,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.9.2",
@@ -71,6 +77,10 @@
         {
          "firstgid":129,
          "source":"..\/..\/tilesets\/spike.tsj"
+        }, 
+        {
+         "firstgid":130,
+         "source":"..\/..\/tilesets\/zero.tsj"
         }],
  "tilewidth":16,
  "type":"map",

@@ -87,20 +87,24 @@ const GameData = struct {
     fn reset(self: *GameData) void {
         self.state = .start;
         self.counter = 0;
-        self.player.box.h = Player.height;
-        self.player.vx = 0;
-        self.player.vy = Player.vmax;
-        self.player.state = .jumping;
-        self.player.face_left = false;
         self.input = std.mem.zeroes(Player.Input);
         self.prev_input = std.mem.zeroes(Player.Input);
         self.cur_room_index = 0;
         self.prev_room_index = 0;
-        self.scrollr.x = cur_stage.rooms[self.cur_room_index].bounds.x;
-        self.scrollr.y = cur_stage.rooms[self.cur_room_index].bounds.y;
-        self.player.box.x = self.scrollr.x + (screen_width - Player.width) / 2;
-        self.player.box.y = self.scrollr.y - Player.height;
-        uploadRoomTexture(&cur_room_tex, cur_stage.rooms[self.cur_room_index]);
+        const room = cur_stage.rooms[self.cur_room_index];
+        uploadRoomTexture(&cur_room_tex, room);
+        self.scrollr.x = room.bounds.x;
+        self.scrollr.y = room.bounds.y;
+        for (room.entities) |e| {
+            if (e.class == .player) {
+                self.player.box = e.box;
+                break;
+            }
+        }
+        self.player.vx = 0;
+        self.player.vy = 0;
+        self.player.state = .idle;
+        self.player.face_left = false;
     }
 
     fn saveSnapshot(self: GameData) void {
@@ -136,11 +140,11 @@ const GameData = struct {
     }
 
     fn tickStart(self: *GameData) void {
-        if (self.counter % 40 < 20) {
+        if (self.counter % 16 >= 8 and self.counter < 32) {
             setText("READY", text_w / 2 - 2, text_h / 2);
         }
         self.counter += 1;
-        if (self.counter == 120) {
+        if (self.counter >= 48) {
             self.counter = 0;
             self.state = .playing;
         }
@@ -429,6 +433,51 @@ fn drawDeathEffect(x: f32, y: f32) void {
     death_frame_counter += 1;
 }
 
+fn drawTeleportEffect() void {
+    if (game_data.counter < 32) return;
+    const frame: i32 = game_data.counter - 32;
+    const x = game_data.player.box.x + @divTrunc(game_data.player.box.w, 2);
+    var y = game_data.player.box.y + game_data.player.box.h;
+    if (frame <= 10 or frame == 15) {
+        if (frame != 15) y -= 16 * (10 - frame);
+        var i: i32 = 0;
+        while (i < 4) : (i += 1) {
+            Sprite.draw(
+                Player.sprite,
+                Rect2.init(232, 0, 8, 8),
+                Rect2.init(@intToFloat(f32, x) - 4, @intToFloat(f32, y + i * 8 - 32), 8, 8),
+            );
+        }
+    } else if (frame <= 12) {
+        Sprite.draw(
+            Player.sprite,
+            Rect2.init(224, 16, 24, 16),
+            Rect2.init(@intToFloat(f32, x) - 12, @intToFloat(f32, y) - 16, 24, 16),
+        );
+        Sprite.draw(
+            Player.sprite,
+            Rect2.init(224, 16, 24, 8),
+            Rect2.init(@intToFloat(f32, x) - 12, @intToFloat(f32, y) - 24, 24, 8),
+        );
+        Sprite.draw(
+            Player.sprite,
+            Rect2.init(232, 8, 8, 8),
+            Rect2.init(@intToFloat(f32, x) - 4, @intToFloat(f32, y) - 32, 8, 8),
+        );
+    } else if (frame <= 14) {
+        Sprite.draw(
+            Player.sprite,
+            Rect2.init(224, 24, 24, 8),
+            Rect2.init(@intToFloat(f32, x) - 12, @intToFloat(f32, y) - 8, 24, 8),
+        );
+        Sprite.draw(
+            Player.sprite,
+            Rect2.init(232, 8, 8, 8),
+            Rect2.init(@intToFloat(f32, x) - 4, @intToFloat(f32, y) - 16, 8, 8),
+        );
+    }
+}
+
 fn drawTitle() void {
     Sprite.draw(title_tex, Rect2.init(0, 0, 192, 56), Rect2.init(32, 64, 192, 56));
 }
@@ -449,14 +498,16 @@ fn draw() void {
 
         drawRoom(cur_stage.rooms[game_data.cur_room_index], cur_room_tex, game_data.door1_h, game_data.door2_h);
 
-        if (game_data.state != .start) {
-            if (game_data.state != .gameover or (death_frame_counter < 40 and death_frame_counter % 8 < 4)) {
+        if (game_data.state == .start) {
+            // game_data.player.draw();
+            drawTeleportEffect();
+        } else if (game_data.state == .gameover) {
+            if (death_frame_counter < 40 and death_frame_counter % 8 < 4) {
                 game_data.player.draw();
             }
-        }
-
-        if (game_data.state == .gameover) {
             drawDeathEffect(@intToFloat(f32, game_data.player.box.x) - 4, @intToFloat(f32, game_data.player.box.y));
+        } else {
+            game_data.player.draw();
         }
     }
 
@@ -499,6 +550,7 @@ fn drawRoom(room: Room, room_tex: Renderer.Texture, door1_h: u8, door2_h: u8) vo
     for (room.entities) |entity| {
         switch (entity.class) {
             .spike => Sprite.draw(spike_sprite, Rect2.init(0, 0, 16, 24), entity.box.toRect2()),
+            else => {},
         }
     }
 }

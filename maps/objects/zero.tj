@@ -1,0 +1,18 @@
+{ "object":
+    {
+     "class":"",
+     "gid":1,
+     "height":32,
+     "id":4,
+     "name":"zero",
+     "rotation":0,
+     "visible":true,
+     "width":24
+    },
+ "tileset":
+    {
+     "firstgid":1,
+     "source":"..\/tilesets\/zero.tsj"
+    },
+ "type":"template"
+}

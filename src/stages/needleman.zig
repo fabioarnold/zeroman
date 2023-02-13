@@ -40,6 +40,10 @@ pub const needleman = Stage{
                     .class = .spike,
                     .box = Box{ .x = 240, .y = 168, .w = 16, .h = 24 },
                 },
+                Entity{
+                    .class = .player,
+                    .box = Box{ .x = 124, .y = 168, .w = 16, .h = 24 },
+                },
             },
         },
         Room{

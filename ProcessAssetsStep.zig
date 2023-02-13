@@ -136,7 +136,17 @@ fn make(step: *std.build.Step) !void {
                     try writer.writeAll("      .entities = &[_]Entity{\n");
                     for (objects) |object| {
                         const template = object.template orelse continue;
-                        if (std.mem.endsWith(u8, template, "spike.tj")) {
+                        if (std.mem.endsWith(u8, template, "zero.tj")) {
+                            try writer.writeAll("        Entity{\n");
+                            try writer.writeAll("          .class = .player,\n");
+                            try writer.print("          .box = Box{{ .x = {}, .y = {}, .w = {}, .h = {} }},\n", .{
+                                object.x + 8,
+                                object.y - 24,
+                                16,
+                                24,
+                            });
+                            try writer.writeAll("        },\n");
+                        } else if (std.mem.endsWith(u8, template, "spike.tj")) {
                             try writer.writeAll("        Entity{\n");
                             try writer.writeAll("          .class = .spike,\n");
                             try writer.print("          .box = Box{{ .x = {}, .y = {}, .w = {}, .h = {} }},\n", .{

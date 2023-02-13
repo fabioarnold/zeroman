@@ -1,0 +1,14 @@
+{ "columns":32,
+ "image":"..\/..\/img\/zero.png",
+ "imageheight":32,
+ "imagewidth":256,
+ "margin":0,
+ "name":"zero",
+ "spacing":0,
+ "tilecount":128,
+ "tiledversion":"1.9.2",
+ "tileheight":32,
+ "tilewidth":24,
+ "type":"tileset",
+ "version":"1.9"
+}
