@@ -24,23 +24,4 @@ pub fn build(b: *std.Build) void {
         const fmt = b.addFmt(&.{"src/stages/needleman.zig"});
         wasm.step.dependOn(&fmt.step);
     }
-
-    {
-        const apple_pie = GitRepoStep.create(b, .{
-            .url = "https://github.com/Luukdegram/apple_pie",
-            .branch = null,
-            .sha = "5eaaabdced4f9b8d6cee947b465e7ea16ea61f42",
-            .fetch_enabled = true,
-        });
-        const exe = b.addExecutable(.{
-            .name = "webserver",
-            .root_source_file = .{ .path = "webserver.zig" },
-        });
-        exe.step.dependOn(&apple_pie.step);
-        const apple_pie_mod = b.createModule(.{ .source_file = .{ .path = b.pathJoin(&.{ apple_pie.getPath(&exe.step), "src", "apple_pie.zig" }) } });
-        exe.addModule("apple_pie", apple_pie_mod);
-        const run = exe.run();
-        run.addArg(b.build_root);
-        b.step("serve", "Serve the game files").dependOn(&run.step);
-    }
 }
