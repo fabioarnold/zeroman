@@ -20,7 +20,7 @@ pub fn toRect2(self: Box) Rect2 {
     };
 }
 
-pub fn overlap(self: Box, other: Box) bool {
+pub fn overlaps(self: Box, other: Box) bool {
     return self.x < other.x + other.w and self.x + self.w > other.x and self.y < other.y + other.h and self.y + self.h > other.y;
 }
 

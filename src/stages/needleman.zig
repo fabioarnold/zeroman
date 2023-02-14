@@ -38,7 +38,11 @@ pub const needleman = Stage{
                 },
                 Entity{
                     .class = .gopher,
-                    .box = Box{ .x = 312, .y = 168, .w = 16, .h = 24 },
+                    .box = Box{ .x = 372, .y = 120, .w = 16, .h = 24 },
+                },
+                Entity{
+                    .class = .gopher,
+                    .box = Box{ .x = 580, .y = 120, .w = 16, .h = 24 },
                 },
             },
         },

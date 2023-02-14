@@ -112,7 +112,7 @@ pub fn overlap(self: Room, attribs: []const Tile.Attrib, mover: Box) bool {
             const attrib = attribs[tile_index];
             if (attrib == .solid) {
                 const solid = Box{ .x = x * Tile.size, .y = y * Tile.size, .w = Tile.size, .h = Tile.size };
-                if (box.overlap(solid)) return true;
+                if (box.overlaps(solid)) return true;
             }
         }
     }

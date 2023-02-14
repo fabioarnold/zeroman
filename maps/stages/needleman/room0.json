@@ -48,8 +48,14 @@
                 {
                  "id":5,
                  "template":"..\/..\/objects\/gopher.tj",
-                 "x":304,
-                 "y":192
+                 "x":368,
+                 "y":144
+                }, 
+                {
+                 "id":6,
+                 "template":"..\/..\/objects\/gopher.tj",
+                 "x":576,
+                 "y":144
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -58,7 +64,7 @@
          "y":0
         }],
  "nextlayerid":3,
- "nextobjectid":6,
+ "nextobjectid":7,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.9.2",

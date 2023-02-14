@@ -40,6 +40,8 @@ const text_w = screen_width / 8;
 const text_h = screen_height / 8;
 var text_buffer: [text_w * text_h]u8 = undefined;
 
+var prng = std.rand.DefaultPrng.init(0);
+
 const GameState = enum {
     title,
     start,
@@ -65,7 +67,7 @@ const door_duration = 16;
 var room_transition: RoomTransition = .none;
 var mode_frame: i32 = 0;
 
-const GameData = struct {
+pub const GameData = struct {
     state: GameState = .title,
     counter: u8 = 0, // number of frames to wait in a state
     title_any_key_pressed: bool = false,
@@ -93,7 +95,7 @@ const GameData = struct {
         self.prev_input = std.mem.zeroes(Player.Input);
         self.cur_room_index = 0;
         self.prev_room_index = 0;
-        const room = cur_stage.rooms[self.cur_room_index];
+        const room = self.getCurrentRoom();
         uploadRoomTexture(&cur_room_tex, room);
         self.scrollr.x = room.bounds.x;
         self.scrollr.y = room.bounds.y;
@@ -143,7 +145,11 @@ const GameData = struct {
         self.* = std.json.parse(GameData, &ts, .{
             .ignore_unknown_fields = true,
         }) catch return;
-        uploadRoomTexture(&cur_room_tex, cur_stage.rooms[self.cur_room_index]); // FIXME
+        uploadRoomTexture(&cur_room_tex, self.getCurrentRoom()); // FIXME
+    }
+
+    pub fn getCurrentRoom(self: GameData) Room {
+        return cur_stage.rooms[self.cur_room_index];
     }
 
     fn tickTitle(self: *GameData) void {
@@ -241,7 +247,7 @@ const GameData = struct {
         }
     }
 
-    fn killPlayer(self: *GameData) void {
+    pub fn killPlayer(self: *GameData) void {
         if (!self.player.no_clip) {
             self.state = .gameover;
             self.counter = 0;
@@ -263,7 +269,7 @@ const GameData = struct {
         updatePlayer(&self.player);
 
         for (self.enemies) |*enemy| {
-            if (enemy.active) enemy.tick(cur_stage.rooms[self.cur_room_index], cur_stage.attribs);
+            if (enemy.active) enemy.tick(prng.random(), self, cur_stage.attribs);
         }
 
         if (findNextRoom(cur_stage.rooms, self.cur_room_index, self.player.box)) |next_room_index| {
@@ -273,7 +279,7 @@ const GameData = struct {
         }
 
         const cur_room = cur_stage.rooms[self.cur_room_index];
-        if (!cur_room.bounds.overlap(self.player.box)) {
+        if (!cur_room.bounds.overlaps(self.player.box)) {
             if (self.player.box.y > cur_room.bounds.y + cur_room.bounds.h) {
                 self.killPlayer();
                 return;
@@ -288,7 +294,7 @@ const GameData = struct {
                 .w = Tile.size,
                 .h = 4 * Tile.size,
             };
-            if (self.player.box.overlap(door_box)) {
+            if (self.player.box.overlaps(door_box)) {
                 door_box.x -= 1;
                 if (findNextRoom(cur_stage.rooms, self.cur_room_index, door_box)) |next_room_index| {
                     setNextRoom(next_room_index);
@@ -306,7 +312,7 @@ const GameData = struct {
                 .w = Tile.size,
                 .h = 4 * Tile.size,
             };
-            if (self.player.box.overlap(door_box)) {
+            if (self.player.box.overlaps(door_box)) {
                 door_box.x += 1;
                 if (findNextRoom(cur_stage.rooms, self.cur_room_index, door_box)) |next_room_index| {
                     setNextRoom(next_room_index);
@@ -319,7 +325,7 @@ const GameData = struct {
         // check spikes
         for (cur_room.entities) |entity| {
             if (entity.class == .spike) {
-                if (self.player.box.overlap(entity.box)) {
+                if (self.player.box.overlaps(entity.box)) {
                     self.killPlayer();
                 }
             }
@@ -431,7 +437,7 @@ fn findNextRoom(rooms: []const Room, skip_room_index: u8, box: Box) ?u8 {
     var room_index: u8 = 0;
     while (room_index < rooms.len) : (room_index += 1) {
         if (room_index == skip_room_index) continue;
-        if (rooms[room_index].bounds.overlap(box)) {
+        if (rooms[room_index].bounds.overlaps(box)) {
             return room_index;
         }
     }
