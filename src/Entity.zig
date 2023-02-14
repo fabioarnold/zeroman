@@ -4,6 +4,7 @@ const Room = @This();
 
 pub const Class = enum {
     player,
+    gopher,
     spike,
 };
 

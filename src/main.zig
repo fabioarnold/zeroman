@@ -12,6 +12,7 @@ const Tile = @import("Tile.zig");
 const Room = @import("Room.zig");
 const Stage = @import("Stage.zig");
 const Player = @import("Player.zig");
+const Enemy = @import("Enemy.zig");
 const needleman = @import("stages/needleman.zig").needleman;
 
 // Overwrite default log handler
@@ -71,6 +72,7 @@ const GameData = struct {
     player: Player = .{},
     input: Player.Input = std.mem.zeroes(Player.Input),
     prev_input: Player.Input = std.mem.zeroes(Player.Input),
+    enemies: [16]Enemy = undefined,
 
     cur_room_index: u8 = 0,
     prev_room_index: u8 = 0,
@@ -101,10 +103,31 @@ const GameData = struct {
                 break;
             }
         }
+        self.deactivateEnemies();
+        self.activateEnemies(room);
         self.player.vx = 0;
         self.player.vy = 0;
         self.player.state = .idle;
         self.player.face_left = false;
+    }
+
+    fn activateEnemies(self: *GameData, room: Room) void {
+        var i: usize = 0;
+        for (room.entities) |e| {
+            switch (e.class) {
+                .gopher => {
+                    self.enemies[i].activate(.gopher, e.box);
+                    i += 1;
+                },
+                else => {},
+            }
+        }
+    }
+
+    fn deactivateEnemies(self: *GameData) void {
+        for (self.enemies) |*e| {
+            e.active = false;
+        }
     }
 
     fn saveSnapshot(self: GameData) void {
@@ -239,6 +262,10 @@ const GameData = struct {
 
         updatePlayer(&self.player);
 
+        for (self.enemies) |*enemy| {
+            if (enemy.active) enemy.tick(cur_stage.rooms[self.cur_room_index], cur_stage.attribs);
+        }
+
         if (findNextRoom(cur_stage.rooms, self.cur_room_index, self.player.box)) |next_room_index| {
             setNextRoom(next_room_index);
             room_transition = .vertical;
@@ -331,6 +358,7 @@ fn setText(text: []const u8, x: usize, y: usize) void {
 export fn onInit() void {
     Renderer.init();
     Player.load();
+    Enemy.load();
     title_tex.loadFromUrl("img/title.png", 192, 56);
     door_sprite.loadFromUrl("img/door.png", 16, 16);
     spike_sprite.loadFromUrl("img/spike.png", 16, 24);
@@ -497,6 +525,10 @@ fn draw() void {
         }
 
         drawRoom(cur_stage.rooms[game_data.cur_room_index], cur_room_tex, game_data.door1_h, game_data.door2_h);
+
+        for (game_data.enemies) |enemy| {
+            if (enemy.active) enemy.draw();
+        }
 
         if (game_data.state == .start) {
             // game_data.player.draw();

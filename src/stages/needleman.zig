@@ -30,19 +30,15 @@ pub const needleman = Stage{
             .entities = &[_]Entity{
                 Entity{
                     .class = .spike,
-                    .box = Box{ .x = 192, .y = 168, .w = 16, .h = 24 },
-                },
-                Entity{
-                    .class = .spike,
                     .box = Box{ .x = 464, .y = 168, .w = 16, .h = 24 },
-                },
-                Entity{
-                    .class = .spike,
-                    .box = Box{ .x = 240, .y = 168, .w = 16, .h = 24 },
                 },
                 Entity{
                     .class = .player,
                     .box = Box{ .x = 124, .y = 168, .w = 16, .h = 24 },
+                },
+                Entity{
+                    .class = .gopher,
+                    .box = Box{ .x = 312, .y = 168, .w = 16, .h = 24 },
                 },
             },
         },

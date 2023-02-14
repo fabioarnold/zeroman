@@ -1,0 +1,18 @@
+{ "object":
+    {
+     "class":"gopher",
+     "gid":2,
+     "height":24,
+     "id":5,
+     "name":"",
+     "rotation":0,
+     "visible":true,
+     "width":24
+    },
+ "tileset":
+    {
+     "firstgid":1,
+     "source":"..\/tilesets\/gopher.tsj"
+    },
+ "type":"template"
+}

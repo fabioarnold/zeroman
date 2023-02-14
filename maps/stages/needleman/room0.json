@@ -34,27 +34,21 @@
          "name":"Object Layer 1",
          "objects":[
                 {
-                 "id":1,
-                 "template":"..\/..\/objects\/spike.tj",
-                 "x":192,
-                 "y":192
-                }, 
-                {
                  "id":2,
                  "template":"..\/..\/objects\/spike.tj",
                  "x":464,
                  "y":192
                 }, 
                 {
-                 "id":3,
-                 "template":"..\/..\/objects\/spike.tj",
-                 "x":240,
-                 "y":192
-                }, 
-                {
                  "id":4,
                  "template":"..\/..\/objects\/zero.tj",
                  "x":116,
+                 "y":192
+                }, 
+                {
+                 "id":5,
+                 "template":"..\/..\/objects\/gopher.tj",
+                 "x":304,
                  "y":192
                 }],
          "opacity":1,
@@ -64,7 +58,7 @@
          "y":0
         }],
  "nextlayerid":3,
- "nextobjectid":5,
+ "nextobjectid":6,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.9.2",
@@ -81,6 +75,10 @@
         {
          "firstgid":130,
          "source":"..\/..\/tilesets\/zero.tsj"
+        }, 
+        {
+         "firstgid":140,
+         "source":"..\/..\/tilesets\/gopher.tsj"
         }],
  "tilewidth":16,
  "type":"map",

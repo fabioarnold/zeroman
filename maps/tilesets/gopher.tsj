@@ -1,0 +1,14 @@
+{ "columns":3,
+ "image":"..\/..\/img\/gopher.png",
+ "imageheight":24,
+ "imagewidth":72,
+ "margin":0,
+ "name":"gopher",
+ "spacing":0,
+ "tilecount":3,
+ "tiledversion":"1.9.2",
+ "tileheight":24,
+ "tilewidth":24,
+ "type":"tileset",
+ "version":"1.9"
+}
