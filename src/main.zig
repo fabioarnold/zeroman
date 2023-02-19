@@ -565,7 +565,7 @@ fn draw() void {
     // ui
     Renderer.scroll.x = 0;
     Renderer.scroll.y = 0;
-    drawHealthbar();
+    if (game_data.state != .title) drawHealthbar();
 
     // text layer
     text_tex.updateData(text_buffer[0..]);
