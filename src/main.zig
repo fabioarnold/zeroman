@@ -43,6 +43,7 @@ const text_h = screen_height / 8;
 var text_buffer: [text_w * text_h]u8 = undefined;
 
 var prng = std.rand.DefaultPrng.init(0);
+const rng = prng.random();
 
 const GameState = enum {
     title,
@@ -188,6 +189,10 @@ pub const GameData = struct {
         } else {
             self.counter += 1;
         }
+
+        for (self.enemies) |*enemy| {
+            if (enemy.active) enemy.tick(rng, self, cur_stage.attribs);
+        }
     }
 
     fn doVerticalRoomTransition(self: *GameData) void {
@@ -260,7 +265,7 @@ pub const GameData = struct {
         updatePlayer(&self.player);
 
         for (self.enemies) |*enemy| {
-            if (enemy.active) enemy.tick(prng.random(), self, cur_stage.attribs);
+            if (enemy.active) enemy.tick(rng, self, cur_stage.attribs);
         }
 
         if (findNextRoom(cur_stage.rooms, self.cur_room_index, self.player.box)) |next_room_index| {
@@ -393,6 +398,7 @@ export fn onKeyDown(key: c_uint) void {
             keys.KEY_1 => game_data.saveSnapshot(),
             keys.KEY_2 => game_data.loadSnapshot(),
             keys.KEY_3 => game_data.player.no_clip = !game_data.player.no_clip,
+            keys.KEY_4 => game_data.player.hurt(1),
             else => {},
         }
     }
