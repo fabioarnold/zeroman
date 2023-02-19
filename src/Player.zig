@@ -79,7 +79,7 @@ state: State = .idle,
 face_left: bool = false,
 health: u8 = max_health,
 invincibility_frames: u8 = 0,
-anim_time: i32 = 0,
+anim_time: u32 = 0,
 slide_frames: u8 = 0,
 no_clip: bool = false,
 
@@ -129,43 +129,23 @@ pub fn draw(self: *Player) void {
             if (self.anim_time > 200) src_rect.x = 24;
             if (self.anim_time > 210) self.anim_time = 0;
         },
-        .sliding => {
-            src_rect.x = 144;
-            src_rect.y = 6;
-            src_rect.w = 32;
-            src_rect.h = 26;
-        },
+        .sliding => src_rect = Rect.init(144, 6, 32, 26),
         .running => {
-            if (self.anim_time >= 40) self.anim_time = 0;
-            const frame = @divTrunc(self.anim_time, 10);
-            if (frame == 0) {
-                src_rect.x = 48;
-            } else if (frame == 1 or frame == 3) {
-                src_rect.x = 80;
-            } else if (frame == 2) {
-                src_rect.x = 112;
-            }
+            const frame = (self.anim_time % 40) / 10;
+            src_rect.x = switch (frame) {
+                0 => 48,
+                1, 3 => 80,
+                2 => 112,
+                else => unreachable,
+            };
             src_rect.w = 32;
         },
-        .jumping => {
-            src_rect.x = 176;
-            src_rect.y = 0;
-            src_rect.w = 32;
-            src_rect.h = 32;
-        },
+        .jumping => src_rect = Rect.init(176, 0, 32, 32),
         .climbing => {
-            src_rect.x = 240;
-            src_rect.y = 0;
-            src_rect.w = 16;
-            src_rect.h = 32;
+            src_rect = Rect.init(240, 0, 16, 32);
             flip_x = @mod(self.box.y, 20) < 10;
         },
-        .hurting => {
-            src_rect.x = 208;
-            src_rect.y = 0;
-            src_rect.w = 32;
-            src_rect.h = 32;
-        },
+        .hurting => src_rect = Rect.init(208, 0, 32, 32),
     }
     var dst_rect = Rect.init(self.box.x + @divTrunc(self.box.w - src_rect.w, 2), self.box.y - 8, src_rect.w, src_rect.h);
     switch (self.state) {
