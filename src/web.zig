@@ -25,7 +25,7 @@ pub fn log(
     jsLogFlush();
 }
 
-var sbuf: [1000]u8 = undefined; // FIXME
+var sbuf: [4000]u8 = undefined; // FIXME
 
 pub const LocalStorage = struct {
     pub fn setString(key: []const u8, value: []const u8) void {

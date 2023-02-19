@@ -133,7 +133,7 @@ pub const GameData = struct {
     }
 
     fn saveSnapshot(self: GameData) void {
-        var buf: [1000]u8 = undefined; // FIXME
+        var buf: [4000]u8 = undefined; // FIXME
         var stream = std.io.fixedBufferStream(&buf);
         std.json.stringify(self, .{}, stream.writer()) catch unreachable;
         web.LocalStorage.setString("snapshot", stream.getWritten());
@@ -144,7 +144,7 @@ pub const GameData = struct {
         var ts = std.json.TokenStream.init(value);
         self.* = std.json.parse(GameData, &ts, .{
             .ignore_unknown_fields = true,
-        }) catch return;
+        }) catch unreachable;
         uploadRoomTexture(&cur_room_tex, self.getCurrentRoom()); // FIXME
     }
 
