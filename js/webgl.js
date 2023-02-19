@@ -9,7 +9,7 @@ let webglOptions = {
   failIfMajorPerformanceCaveat: false,  //Boolean that indicates if a context will be created if the system performance is low.
   powerPreference: "default", //A hint to the user agent indicating what configuration of GPU is suitable for the WebGL context. Possible values are:
   premultipliedAlpha: false,  //Boolean that indicates that the page compositor will assume the drawing buffer contains colors with pre-multiplied alpha.
-  preserveDrawingBuffer: false,  //If the value is true the buffers will not be cleared and will preserve their values until cleared or overwritten by the author.
+  preserveDrawingBuffer: true,  //If the value is true the buffers will not be cleared and will preserve their values until cleared or overwritten by the author.
   stencil: true, //Boolean that indicates that the drawing buffer has a stencil buffer of at least 8 bits.
 }
 
