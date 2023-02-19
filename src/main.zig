@@ -5,7 +5,7 @@ const web = @import("web.zig");
 const keys = @import("keys.zig");
 
 const Renderer = @import("Renderer.zig");
-const Rect2 = Renderer.Rect2;
+const Rect2i = Renderer.Rect2i;
 const Sprite = Renderer.Sprite;
 const Box = @import("Box.zig");
 const Tile = @import("Tile.zig");
@@ -459,16 +459,17 @@ fn setNextRoom(next_room_index: u8) void {
 }
 
 var death_frame_counter: u32 = 0;
-fn drawDeathEffect(x: f32, y: f32) void {
-    const frame = (death_frame_counter / 3) % 6;
-    const src_rect = Rect2.init(@intToFloat(f32, frame) * 24, 0, 24, 24);
+fn drawDeathEffect(x: i32, y: i32) void {
+    const frame = @intCast(i32, (death_frame_counter / 3) % 6);
+    const src_rect = Rect2i.init(frame * 24, 0, 24, 24);
 
     var i: usize = 0;
     while (i < 8) : (i += 1) {
         const angle: f32 = std.math.pi * @intToFloat(f32, i) / 4.0;
         const r: f32 = 2 * @intToFloat(f32, death_frame_counter);
-        const dst_rect = Rect2.init(x + r * @sin(angle), y + r * @cos(angle), 24, 24);
-        Sprite.draw(effects_tex, src_rect, dst_rect);
+        const dx = x + @floatToInt(i32, r * @cos(angle));
+        const dy = y + @floatToInt(i32, r * @sin(angle));
+        Sprite.drawFrame(effects_tex, src_rect, dx, dy);
     }
 
     death_frame_counter += 1;
@@ -481,52 +482,29 @@ fn drawTeleportEffect() void {
     var y = game_data.player.box.y + game_data.player.box.h;
     if (frame <= 10 or frame == 15) {
         if (frame != 15) y -= 16 * (10 - frame);
+        const src_rect = Rect2i.init(8, 0, 8, 8);
         var i: i32 = 0;
         while (i < 4) : (i += 1) {
-            Sprite.draw(
-                teleport_tex,
-                Rect2.init(8, 0, 8, 8),
-                Rect2.init(@intToFloat(f32, x) - 4, @intToFloat(f32, y + i * 8 - 32), 8, 8),
-            );
+            Sprite.drawFrame(teleport_tex, src_rect, x - 4, y + i * 8 - 32);
         }
     } else if (frame <= 12) {
-        Sprite.draw(
-            teleport_tex,
-            Rect2.init(0, 16, 24, 16),
-            Rect2.init(@intToFloat(f32, x) - 12, @intToFloat(f32, y) - 16, 24, 16),
-        );
-        Sprite.draw(
-            teleport_tex,
-            Rect2.init(0, 16, 24, 8),
-            Rect2.init(@intToFloat(f32, x) - 12, @intToFloat(f32, y) - 24, 24, 8),
-        );
-        Sprite.draw(
-            teleport_tex,
-            Rect2.init(8, 8, 8, 8),
-            Rect2.init(@intToFloat(f32, x) - 4, @intToFloat(f32, y) - 32, 8, 8),
-        );
+        Sprite.drawFrame(teleport_tex, Rect2i.init(0, 16, 24, 16), x - 12, y - 16);
+        Sprite.drawFrame(teleport_tex, Rect2i.init(0, 16, 24, 8), x - 12, y - 24);
+        Sprite.drawFrame(teleport_tex, Rect2i.init(8, 8, 8, 8), x - 4, y - 32);
     } else if (frame <= 14) {
-        Sprite.draw(
-            teleport_tex,
-            Rect2.init(0, 24, 24, 8),
-            Rect2.init(@intToFloat(f32, x) - 12, @intToFloat(f32, y) - 8, 24, 8),
-        );
-        Sprite.draw(
-            teleport_tex,
-            Rect2.init(8, 8, 8, 8),
-            Rect2.init(@intToFloat(f32, x) - 4, @intToFloat(f32, y) - 16, 8, 8),
-        );
+        Sprite.drawFrame(teleport_tex, Rect2i.init(0, 24, 24, 8), x - 12, y - 8);
+        Sprite.drawFrame(teleport_tex, Rect2i.init(8, 8, 8, 8), x - 4, y - 16);
     }
 }
 
 fn drawTitle() void {
-    Sprite.draw(title_tex, Rect2.init(0, 0, 192, 56), Rect2.init(32, 64, 192, 56));
+    Sprite.drawFrame(title_tex, Rect2i.init(0, 0, 192, 56), 32, 64);
 }
 
 fn drawHealthbar() void {
-    Sprite.draw(healthbar_tex, Rect2.init(0, 0, 12, 68), Rect2.init(22, 14, 12, 68));
-    const h = @intToFloat(f32, 4 + (31 - game_data.player.health) * 2);
-    Sprite.draw(healthbar_tex, Rect2.init(12, 0, 12, h), Rect2.init(22, 14, 12, h));
+    Sprite.drawFrame(healthbar_tex, Rect2i.init(0, 0, 12, 68), 22, 14);
+    const h = 4 + (31 - @as(i32, game_data.player.health)) * 2;
+    Sprite.drawFrame(healthbar_tex, Rect2i.init(12, 0, 12, h), 22, 14);
 }
 
 fn draw() void {
@@ -535,8 +513,8 @@ fn draw() void {
     if (game_data.state == .title) {
         drawTitle();
     } else {
-        Renderer.scroll.x = @intToFloat(f32, game_data.scrollr.x);
-        Renderer.scroll.y = @intToFloat(f32, game_data.scrollr.y);
+        Renderer.scroll.x = game_data.scrollr.x;
+        Renderer.scroll.y = game_data.scrollr.y;
 
         // prev room is visible during transition
         if (room_transition != .none) {
@@ -556,7 +534,7 @@ fn draw() void {
             if (death_frame_counter < 40 and death_frame_counter % 8 < 4) {
                 game_data.player.draw();
             }
-            drawDeathEffect(@intToFloat(f32, game_data.player.box.x) - 4, @intToFloat(f32, game_data.player.box.y));
+            drawDeathEffect(game_data.player.box.x - 4, game_data.player.box.y);
         } else {
             game_data.player.draw();
         }
@@ -569,41 +547,29 @@ fn draw() void {
 
     // text layer
     text_tex.updateData(text_buffer[0..]);
-    const text_rect = Rect2.init(0, 0, screen_width, screen_height);
+    const text_rect = Rect2i.init(0, 0, screen_width, screen_height);
     Renderer.Tilemap.draw(text_tex, font_tex, text_rect);
 }
 
 fn drawRoom(room: Room, room_tex: Renderer.Texture, door1_h: u8, door2_h: u8) void {
-    Renderer.Tilemap.draw(room_tex, tiles_tex, room.bounds.toRect2());
+    Renderer.Tilemap.draw(room_tex, tiles_tex, room.bounds.toRect2i());
 
     if (room.door1_y != Room.no_door) {
-        var i: usize = 0;
+        var i: u8 = 0;
         while (i < door1_h) : (i += 1) {
-            const dst_rect = Rect2.init(
-                @intToFloat(f32, room.bounds.x),
-                @intToFloat(f32, room.bounds.y + @intCast(i32, room.door1_y + i) * Tile.size),
-                Tile.size,
-                Tile.size,
-            );
-            Renderer.Sprite.draw(door_sprite, Rect2.init(0, 0, Tile.size, Tile.size), dst_rect);
+            Renderer.Sprite.draw(door_sprite, room.bounds.x, room.bounds.y + @as(i32, room.door1_y + i) * Tile.size);
         }
     }
     if (room.door2_y != Room.no_door) {
-        var i: usize = 0;
+        var i: u8 = 0;
         while (i < door2_h) : (i += 1) {
-            const dst_rect = Rect2.init(
-                @intToFloat(f32, room.bounds.x + room.bounds.w - Tile.size),
-                @intToFloat(f32, room.bounds.y + @intCast(i32, room.door2_y + i) * Tile.size),
-                Tile.size,
-                Tile.size,
-            );
-            Renderer.Sprite.draw(door_sprite, Rect2.init(0, 0, Tile.size, Tile.size), dst_rect);
+            Renderer.Sprite.draw(door_sprite, room.bounds.x, room.bounds.y + @as(i32, room.door2_y + i) * Tile.size);
         }
     }
 
     for (room.entities) |entity| {
         switch (entity.class) {
-            .spike => Sprite.draw(spike_sprite, Rect2.init(0, 0, 16, 24), entity.box.toRect2()),
+            .spike => Sprite.draw(spike_sprite, entity.box.x, entity.box.y),
             else => {},
         }
     }

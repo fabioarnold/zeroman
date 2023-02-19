@@ -4,7 +4,7 @@ const fb_width = 256;
 const fb_height = 240;
 var blit_vbo: gl.GLuint = undefined;
 
-pub var scroll: Vec2 = Vec2.init(0, 0);
+pub var scroll: Vec2i = Vec2i.init(0, 0);
 
 const identity_matrix = [16]f32{
     1, 0, 0, 0,
@@ -35,23 +35,23 @@ var colored: struct {
     mvp_loc: gl.GLint,
 } = undefined;
 
-pub const Vec2 = struct {
-    x: f32,
-    y: f32,
+pub const Vec2i = struct {
+    x: i32,
+    y: i32,
 
-    pub fn init(x: f32, y: f32) Vec2 {
-        return Vec2{ .x = x, .y = y };
+    pub fn init(x: i32, y: i32) Vec2i {
+        return Vec2i{ .x = x, .y = y };
     }
 };
 
-pub const Rect2 = struct {
-    x: f32,
-    y: f32,
-    w: f32,
-    h: f32,
+pub const Rect2i = struct {
+    x: i32,
+    y: i32,
+    w: i32,
+    h: i32,
 
-    pub fn init(x: f32, y: f32, w: f32, h: f32) Rect2 {
-        return Rect2{ .x = x, .y = y, .w = w, .h = h };
+    pub fn init(x: i32, y: i32, w: i32, h: i32) Rect2i {
+        return Rect2i{ .x = x, .y = y, .w = w, .h = h };
     }
 };
 
@@ -109,16 +109,29 @@ pub const Texture = struct {
 };
 
 pub const Sprite = struct {
-    pub fn draw(sprite: Texture, src_rect: Rect2, dst_rect: Rect2) void {
-        const x = dst_rect.x - scroll.x;
-        const y = dst_rect.y - scroll.y;
+    pub fn draw(sprite: Texture, x: i32, y: i32) void {
+        const src_rect = Rect2i.init(0, 0, @intCast(i32, sprite.width), @intCast(i32, sprite.height));
+        const dst_rect = Rect2i.init(x, y, src_rect.w, src_rect.h);
+        drawFromTo(sprite, src_rect, dst_rect);
+    }
+
+    pub fn drawFrame(sprite: Texture, src_rect: Rect2i, x: i32, y: i32) void {
+        const dst_rect = Rect2i.init(x, y, src_rect.w, src_rect.h);
+        drawFromTo(sprite, src_rect, dst_rect);
+    }
+
+    pub fn drawFromTo(sprite: Texture, src_rect: Rect2i, dst_rect: Rect2i) void {
+        const x = @intToFloat(f32, dst_rect.x - scroll.x);
+        const y = @intToFloat(f32, dst_rect.y - scroll.y);
+        const w = @intToFloat(f32, dst_rect.w);
+        const h = @intToFloat(f32, dst_rect.h);
         const px: f32 = 2.0 / @as(f32, fb_width);
         const py: f32 = 2.0 / @as(f32, fb_height);
         const mvp = [16]f32{
-            px * dst_rect.w, 0,                0, 0,
-            0,               -py * dst_rect.h, 0, 0,
-            0,               0,                1, 0,
-            px * x - 1,      1 - py * y,       0, 1,
+            px * w,     0,          0, 0,
+            0,          -py * h,    0, 0,
+            0,          0,          1, 0,
+            px * x - 1, 1 - py * y, 0, 1,
         };
         gl.glUseProgram(blit2d.program);
         gl.glUniformMatrix4fv(blit2d.mvp_loc, 1, gl.GL_FALSE, &mvp);
@@ -126,10 +139,10 @@ pub const Sprite = struct {
         const sx = 1.0 / @intToFloat(f32, sprite.width);
         const sy = 1.0 / @intToFloat(f32, sprite.height);
         const texmat = [16]f32{
-            src_rect.w * sx, 0,               0, 0,
-            0,               src_rect.h * sy, 0, 0,
-            0,               0,               1, 0,
-            src_rect.x * sx, src_rect.y * sy, 0, 1,
+            @intToFloat(f32, src_rect.w) * sx, 0,                                 0, 0,
+            0,                                 @intToFloat(f32, src_rect.h) * sy, 0, 0,
+            0,                                 0,                                 1, 0,
+            @intToFloat(f32, src_rect.x) * sx, @intToFloat(f32, src_rect.y) * sy, 0, 1,
         };
         gl.glUniformMatrix4fv(blit2d.texmat_loc, 1, gl.GL_FALSE, &texmat);
         gl.glBindTexture(gl.GL_TEXTURE_2D, sprite.handle);
@@ -138,16 +151,18 @@ pub const Sprite = struct {
 };
 
 pub const Tilemap = struct {
-    pub fn draw(map: Texture, tiles: Texture, rect: Rect2) void {
-        const x = rect.x - scroll.x;
-        const y = rect.y - scroll.y;
+    pub fn draw(map: Texture, tiles: Texture, rect: Rect2i) void {
+        const x = @intToFloat(f32, rect.x - scroll.x);
+        const y = @intToFloat(f32, rect.y - scroll.y);
+        const w = @intToFloat(f32, rect.w);
+        const h = @intToFloat(f32, rect.h);
         const px = 2.0 / @as(f32, fb_width);
         const py: f32 = 2.0 / @as(f32, fb_height);
         const mvp = [16]f32{
-            px * rect.w, 0,            0, 0,
-            0,           -py * rect.h, 0, 0,
-            0,           0,            1, 0,
-            px * x - 1,  1 - py * y,   0, 1,
+            px * w,     0,          0, 0,
+            0,          -py * h,    0, 0,
+            0,          0,          1, 0,
+            px * x - 1, 1 - py * y, 0, 1,
         };
         gl.glUseProgram(tiled.program);
         gl.glUniformMatrix4fv(tiled.mvp_loc, 1, gl.GL_FALSE, &mvp);
@@ -166,16 +181,18 @@ pub const Tilemap = struct {
 };
 
 pub const Debug = struct {
-    pub fn drawRect(rect: Rect2, color: Color) void {
-        const x = rect.x - scroll.x;
-        const y = rect.y - scroll.y;
+    pub fn drawRect(rect: Rect2i, color: Color) void {
+        const x = @intToFloat(f32, rect.x - scroll.x);
+        const y = @intToFloat(f32, rect.y - scroll.y);
+        const w = @intToFloat(f32, rect.w);
+        const h = @intToFloat(f32, rect.h);
         const px = 2.0 / @as(f32, fb_width);
         const py: f32 = 2.0 / @as(f32, fb_height);
         const mvp = [16]f32{
-            px * rect.w, 0,            0, 0,
-            0,           -py * rect.h, 0, 0,
-            0,           0,            1, 0,
-            px * x - 1,  1 - py * y,   0, 1,
+            px * w,     0,          0, 0,
+            0,          -py * h,    0, 0,
+            0,          0,          1, 0,
+            px * x - 1, 1 - py * y, 0, 1,
         };
         gl.glUseProgram(colored.program);
         gl.glUniformMatrix4fv(colored.mvp_loc, 1, gl.GL_FALSE, &mvp);

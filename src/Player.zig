@@ -3,7 +3,7 @@ const web = @import("web.zig");
 const keys = @import("keys.zig");
 const Box = @import("Box.zig");
 const Renderer = @import("Renderer.zig");
-const Rect2 = Renderer.Rect2;
+const Rect2i = Renderer.Rect2i;
 const Tile = @import("Tile.zig");
 const Room = @import("Room.zig");
 
@@ -117,15 +117,12 @@ pub fn hurt(self: *Player, damage: u8) void {
 pub fn draw(self: *Player) void {
     if (self.invincibility_frames % 6 >= 3) {
         if (self.state == .hurting) {
-            const src_rect = Rect2.init(0, 0, 24, 24);
-            const dst_rect = Rect2.init(@intToFloat(f32, self.box.x) - 4, @intToFloat(f32, self.box.y), 24, 24);
-            Renderer.Sprite.draw(hurt_fx, src_rect, dst_rect);
+            Renderer.Sprite.draw(hurt_fx, self.box.x - 4, self.box.y);
         }
         return;
     }
 
-    const bigger_sprite = true;
-    var src_rect = if (bigger_sprite) Rect2.init(0, 0, 24, 32) else Rect2.init(0, 8, 24, 24);
+    var src_rect = Rect2i.init(0, 0, 24, 32);
     var flip_x = self.face_left;
     switch (self.state) {
         .idle => {
@@ -170,21 +167,19 @@ pub fn draw(self: *Player) void {
             src_rect.h = 32;
         },
     }
-    var dst_rect = Rect2.init(@intToFloat(f32, self.box.x + @divTrunc(self.box.w - @floatToInt(i32, src_rect.w), 2)), @intToFloat(f32, self.box.y), src_rect.w, src_rect.h);
-    if (bigger_sprite) {
-        dst_rect.y -= 8;
-        if (self.state == .climbing) dst_rect.y += 4;
-        if (self.state == .jumping) dst_rect.y += 5;
-        if (self.state == .hurting) dst_rect.y += 6;
-    } else {
-        if (self.state == .sliding) dst_rect.y -= 8;
-        if (self.state == .climbing) dst_rect.y -= 4;
+    var dst_rect = Rect2i.init(self.box.x + @divTrunc(self.box.w - src_rect.w, 2), self.box.y - 8, src_rect.w, src_rect.h);
+    switch (self.state) {
+        .climbing => dst_rect.y += 4,
+        .jumping => dst_rect.y += 5,
+        .hurting => dst_rect.y += 6,
+        else => {},
     }
+
     if (flip_x) {
         src_rect.x += src_rect.w;
         src_rect.w = -src_rect.w;
     }
-    Renderer.Sprite.draw(sprite, src_rect, dst_rect);
+    Renderer.Sprite.drawFromTo(sprite, src_rect, dst_rect);
 }
 
 pub fn handleInput(self: *Player, room: Room, attribs: []const Tile.Attrib, input: Input, prev_input: Input) void {
