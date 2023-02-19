@@ -67,6 +67,7 @@ pub const width = 16;
 pub const height = 24;
 const jump_speed = -0x04A5; // mega man 3
 pub const vmax = 0x0700;
+const max_health = 31;
 
 var sprite: Renderer.Texture = undefined;
 var hurt_fx: Renderer.Texture = undefined;
@@ -76,7 +77,7 @@ vx: i32 = 0, // fixed point
 vy: i32 = 0,
 state: State = .idle,
 face_left: bool = false,
-health: u8 = 100,
+health: u8 = max_health,
 invincibility_frames: u8 = 0,
 anim_time: i32 = 0,
 slide_frames: u8 = 0,
@@ -87,7 +88,7 @@ pub fn reset(self: *Player) void {
     self.vy = 0;
     self.state = .idle;
     self.face_left = false;
-    self.health = 100;
+    self.health = max_health;
     self.invincibility_frames = 0;
     self.anim_time = 0;
     self.slide_frames = 0;

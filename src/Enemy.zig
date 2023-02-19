@@ -92,7 +92,7 @@ fn tickGopher(self: *Self, r: std.rand.Random, game: *GameData, attribs: []const
     self.counter -= 1;
 
     if (self.box.overlaps(game.player.box)) {
-        game.player.hurt(10);
+        game.player.hurt(4);
     }
 }
 

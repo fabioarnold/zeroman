@@ -24,6 +24,7 @@ const target_frame_time = 1.0 / 60.0;
 const min_frame_time = 1.0 / 10.0;
 
 var title_tex: Renderer.Texture = undefined;
+var healthbar_tex: Renderer.Texture = undefined;
 
 var door_sprite: Renderer.Texture = undefined;
 var spike_sprite: Renderer.Texture = undefined;
@@ -364,6 +365,7 @@ export fn onInit() void {
     Player.load();
     Enemy.load();
     title_tex.loadFromUrl("img/title.png", 192, 56);
+    healthbar_tex.loadFromUrl("img/healthbar.png", 24, 68);
     door_sprite.loadFromUrl("img/door.png", 16, 16);
     spike_sprite.loadFromUrl("img/spike.png", 16, 24);
     tiles_tex.loadFromUrl("img/needleman.png", 16, 8);
@@ -515,6 +517,12 @@ fn drawTitle() void {
     Sprite.draw(title_tex, Rect2.init(0, 0, 192, 56), Rect2.init(32, 64, 192, 56));
 }
 
+fn drawHealthbar() void {
+    Sprite.draw(healthbar_tex, Rect2.init(0, 0, 12, 68), Rect2.init(22, 14, 12, 68));
+    const h = @intToFloat(f32, 4 + (31 - game_data.player.health) * 2);
+    Sprite.draw(healthbar_tex, Rect2.init(12, 0, 12, h), Rect2.init(22, 14, 12, h));
+}
+
 fn draw() void {
     Renderer.clear();
 
@@ -548,10 +556,13 @@ fn draw() void {
         }
     }
 
-    // text layer
-    text_tex.updateData(text_buffer[0..]);
+    // ui
     Renderer.scroll.x = 0;
     Renderer.scroll.y = 0;
+    drawHealthbar();
+
+    // text layer
+    text_tex.updateData(text_buffer[0..]);
     const text_rect = Rect2.init(0, 0, screen_width, screen_height);
     Renderer.Tilemap.draw(text_tex, font_tex, text_rect);
 }
