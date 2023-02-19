@@ -108,10 +108,7 @@ pub const GameData = struct {
         }
         self.deactivateEnemies();
         self.activateEnemies(room);
-        self.player.vx = 0;
-        self.player.vy = 0;
-        self.player.state = .idle;
-        self.player.face_left = false;
+        self.player.reset();
     }
 
     fn activateEnemies(self: *GameData, room: Room) void {
@@ -248,14 +245,6 @@ pub const GameData = struct {
         }
     }
 
-    pub fn killPlayer(self: *GameData) void {
-        if (!self.player.no_clip) {
-            self.state = .gameover;
-            self.counter = 0;
-            death_frame_counter = 0;
-        }
-    }
-
     fn tickPlaying(self: *GameData) void {
         if (room_transition != .none) {
             switch (room_transition) {
@@ -279,12 +268,29 @@ pub const GameData = struct {
             mode_frame = 0;
         }
 
+        // check bottomless pits
         const cur_room = cur_stage.rooms[self.cur_room_index];
         if (!cur_room.bounds.overlaps(self.player.box)) {
             if (self.player.box.y > cur_room.bounds.y + cur_room.bounds.h) {
-                self.killPlayer();
-                return;
+                self.player.hurt(100);
             }
+        }
+
+        // check spikes
+        for (cur_room.entities) |entity| {
+            if (entity.class == .spike) {
+                if (self.player.box.overlaps(entity.box)) {
+                    self.player.hurt(100);
+                }
+            }
+        }
+
+        // check if player is dead
+        if (self.player.health == 0) {
+            self.state = .gameover;
+            self.counter = 0;
+            death_frame_counter = 0;
+            return;
         }
 
         // check door 1
@@ -319,15 +325,6 @@ pub const GameData = struct {
                     setNextRoom(next_room_index);
                     room_transition = .door_ltr;
                     mode_frame = 0;
-                }
-            }
-        }
-
-        // check spikes
-        for (cur_room.entities) |entity| {
-            if (entity.class == .spike) {
-                if (self.player.box.overlaps(entity.box)) {
-                    self.killPlayer();
                 }
             }
         }

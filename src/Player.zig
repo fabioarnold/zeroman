@@ -69,28 +69,60 @@ const jump_speed = -0x04A5; // mega man 3
 pub const vmax = 0x0700;
 
 var sprite: Renderer.Texture = undefined;
+var hurt_fx: Renderer.Texture = undefined;
 
 box: Box = .{ .x = 0, .y = 0, .w = width, .h = height },
 vx: i32 = 0, // fixed point
 vy: i32 = 0,
 state: State = .idle,
+face_left: bool = false,
+health: u8 = 100,
+invincibility_frames: u8 = 0,
 anim_time: i32 = 0,
 slide_frames: u8 = 0,
-face_left: bool = false,
 no_clip: bool = false,
+
+pub fn reset(self: *Player) void {
+    self.vx = 0;
+    self.vy = 0;
+    self.state = .idle;
+    self.face_left = false;
+    self.health = 100;
+    self.invincibility_frames = 0;
+    self.anim_time = 0;
+    self.slide_frames = 0;
+}
 
 pub fn load() void {
     sprite.loadFromUrl("img/zero.png", 256, 32);
+    hurt_fx.loadFromUrl("img/hurt.png", 24, 24);
 }
 
 pub fn tick(self: *Player) void {
-    self.anim_time += 1;
-    if (self.slide_frames > 0) {
-        self.slide_frames -= 1;
-    }
+    self.anim_time +%= 1;
+    self.slide_frames -|= 1;
+    self.invincibility_frames -|= 1;
+}
+
+pub fn hurt(self: *Player, damage: u8) void {
+    if (self.no_clip) return;
+    if (self.invincibility_frames > 0) return;
+
+    self.health -|= damage;
+    self.state = .hurting;
+    self.invincibility_frames = 60;
 }
 
 pub fn draw(self: *Player) void {
+    if (self.invincibility_frames % 6 >= 3) {
+        if (self.state == .hurting) {
+            const src_rect = Rect2.init(0, 0, 24, 24);
+            const dst_rect = Rect2.init(@intToFloat(f32, self.box.x) - 4, @intToFloat(f32, self.box.y), 24, 24);
+            Renderer.Sprite.draw(hurt_fx, src_rect, dst_rect);
+        }
+        return;
+    }
+
     const bigger_sprite = true;
     var src_rect = if (bigger_sprite) Rect2.init(0, 0, 24, 32) else Rect2.init(0, 8, 24, 24);
     var flip_x = self.face_left;
@@ -130,13 +162,19 @@ pub fn draw(self: *Player) void {
             src_rect.h = 32;
             flip_x = @mod(self.box.y, 20) < 10;
         },
-        else => unreachable,
+        .hurting => {
+            src_rect.x = 208;
+            src_rect.y = 0;
+            src_rect.w = 32;
+            src_rect.h = 32;
+        },
     }
     var dst_rect = Rect2.init(@intToFloat(f32, self.box.x + @divTrunc(self.box.w - @floatToInt(i32, src_rect.w), 2)), @intToFloat(f32, self.box.y), src_rect.w, src_rect.h);
     if (bigger_sprite) {
         dst_rect.y -= 8;
         if (self.state == .climbing) dst_rect.y += 4;
         if (self.state == .jumping) dst_rect.y += 5;
+        if (self.state == .hurting) dst_rect.y += 6;
     } else {
         if (self.state == .sliding) dst_rect.y -= 8;
         if (self.state == .climbing) dst_rect.y -= 4;
@@ -156,7 +194,7 @@ pub fn handleInput(self: *Player, room: Room, attribs: []const Tile.Attrib, inpu
             .idle, .running, .jumping => self.doMovement(room, attribs, input, prev_input),
             .climbing => self.doClimbing(room, attribs, input, prev_input),
             .sliding => self.doSliding(room, attribs, input, prev_input),
-            else => {},
+            .hurting => self.doHurting(room, attribs),
         }
     }
 }
@@ -307,5 +345,21 @@ fn doSliding(player: *Player, room: Room, attribs: []const Tile.Attrib, input: I
         } else {
             return;
         }
+    }
+}
+
+fn doHurting(player: *Player, room: Room, attribs: []const Tile.Attrib) void {
+    var on_ground = room.clipY(attribs, player.box, 1) == 0; // moving 1 pixel down
+    if (!on_ground) {
+        // apply gravity
+        player.vy += 0x40;
+        if (player.vy > vmax) player.vy = vmax;
+    } else {
+        player.vy = 0;
+    }
+    player.vx = if (player.face_left) 0x100 else -0x100; // TODO: subpixel movement
+
+    if (player.invincibility_frames < 30) {
+        player.state = .idle;
     }
 }
