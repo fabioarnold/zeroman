@@ -4,7 +4,7 @@ const Box = @import("Box.zig");
 const Attrib = @import("Tile.zig").Attrib;
 const Room = @import("Room.zig");
 const Renderer = @import("Renderer.zig");
-const Rect2i = Renderer.Rect2i;
+const Rect = Renderer.Rect;
 
 const Self = @This();
 
@@ -97,8 +97,8 @@ fn tickGopher(self: *Self, r: std.rand.Random, game: *GameData, attribs: []const
 }
 
 fn drawGopher(self: Self) void {
-    var src_rect = Rect2i.init(self.frame * 24, 0, 24, 24);
-    const dst_rect = Rect2i.init(self.box.x - 4, self.box.y, 24, 24);
+    var src_rect = Rect.init(self.frame * 24, 0, 24, 24);
+    const dst_rect = Rect.init(self.box.x - 4, self.box.y, 24, 24);
     if (self.flip_x) {
         src_rect.x += src_rect.w;
         src_rect.w = -src_rect.w;

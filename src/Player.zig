@@ -3,7 +3,7 @@ const web = @import("web.zig");
 const keys = @import("keys.zig");
 const Box = @import("Box.zig");
 const Renderer = @import("Renderer.zig");
-const Rect2i = Renderer.Rect2i;
+const Rect = Renderer.Rect;
 const Tile = @import("Tile.zig");
 const Room = @import("Room.zig");
 
@@ -122,7 +122,7 @@ pub fn draw(self: *Player) void {
         return;
     }
 
-    var src_rect = Rect2i.init(0, 0, 24, 32);
+    var src_rect = Rect.init(0, 0, 24, 32);
     var flip_x = self.face_left;
     switch (self.state) {
         .idle => {
@@ -167,7 +167,7 @@ pub fn draw(self: *Player) void {
             src_rect.h = 32;
         },
     }
-    var dst_rect = Rect2i.init(self.box.x + @divTrunc(self.box.w - src_rect.w, 2), self.box.y - 8, src_rect.w, src_rect.h);
+    var dst_rect = Rect.init(self.box.x + @divTrunc(self.box.w - src_rect.w, 2), self.box.y - 8, src_rect.w, src_rect.h);
     switch (self.state) {
         .climbing => dst_rect.y += 4,
         .jumping => dst_rect.y += 5,

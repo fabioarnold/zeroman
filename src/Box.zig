@@ -1,4 +1,4 @@
-const Rect2i = @import("Renderer.zig").Rect2i;
+const Rect = @import("Renderer.zig").Rect;
 
 const Box = @This();
 
@@ -11,8 +11,8 @@ pub fn init(x: i32, y: i32, w: i32, h: i32) Box {
     return Box{ .x = x, .y = y, .w = w, .h = h };
 }
 
-pub fn toRect2i(self: Box) Rect2i {
-    return Rect2i.init(self.x, self.y, self.w, self.h);
+pub fn toRect(self: Box) Rect {
+    return Rect.init(self.x, self.y, self.w, self.h);
 }
 
 pub fn overlaps(self: Box, other: Box) bool {

@@ -4,7 +4,7 @@ const fb_width = 256;
 const fb_height = 240;
 var blit_vbo: gl.GLuint = undefined;
 
-pub var scroll: Vec2i = Vec2i.init(0, 0);
+pub var scroll = Point.init(0, 0);
 
 const identity_matrix = [16]f32{
     1, 0, 0, 0,
@@ -35,23 +35,23 @@ var colored: struct {
     mvp_loc: gl.GLint,
 } = undefined;
 
-pub const Vec2i = struct {
+pub const Point = struct {
     x: i32,
     y: i32,
 
-    pub fn init(x: i32, y: i32) Vec2i {
-        return Vec2i{ .x = x, .y = y };
+    pub fn init(x: i32, y: i32) Point {
+        return Point{ .x = x, .y = y };
     }
 };
 
-pub const Rect2i = struct {
+pub const Rect = struct {
     x: i32,
     y: i32,
     w: i32,
     h: i32,
 
-    pub fn init(x: i32, y: i32, w: i32, h: i32) Rect2i {
-        return Rect2i{ .x = x, .y = y, .w = w, .h = h };
+    pub fn init(x: i32, y: i32, w: i32, h: i32) Rect {
+        return Rect{ .x = x, .y = y, .w = w, .h = h };
     }
 };
 
@@ -110,17 +110,17 @@ pub const Texture = struct {
 
 pub const Sprite = struct {
     pub fn draw(sprite: Texture, x: i32, y: i32) void {
-        const src_rect = Rect2i.init(0, 0, @intCast(i32, sprite.width), @intCast(i32, sprite.height));
-        const dst_rect = Rect2i.init(x, y, src_rect.w, src_rect.h);
+        const src_rect = Rect.init(0, 0, @intCast(i32, sprite.width), @intCast(i32, sprite.height));
+        const dst_rect = Rect.init(x, y, src_rect.w, src_rect.h);
         drawFromTo(sprite, src_rect, dst_rect);
     }
 
-    pub fn drawFrame(sprite: Texture, src_rect: Rect2i, x: i32, y: i32) void {
-        const dst_rect = Rect2i.init(x, y, src_rect.w, src_rect.h);
+    pub fn drawFrame(sprite: Texture, src_rect: Rect, x: i32, y: i32) void {
+        const dst_rect = Rect.init(x, y, src_rect.w, src_rect.h);
         drawFromTo(sprite, src_rect, dst_rect);
     }
 
-    pub fn drawFromTo(sprite: Texture, src_rect: Rect2i, dst_rect: Rect2i) void {
+    pub fn drawFromTo(sprite: Texture, src_rect: Rect, dst_rect: Rect) void {
         const x = @intToFloat(f32, dst_rect.x - scroll.x);
         const y = @intToFloat(f32, dst_rect.y - scroll.y);
         const w = @intToFloat(f32, dst_rect.w);
@@ -151,7 +151,7 @@ pub const Sprite = struct {
 };
 
 pub const Tilemap = struct {
-    pub fn draw(map: Texture, tiles: Texture, rect: Rect2i) void {
+    pub fn draw(map: Texture, tiles: Texture, rect: Rect) void {
         const x = @intToFloat(f32, rect.x - scroll.x);
         const y = @intToFloat(f32, rect.y - scroll.y);
         const w = @intToFloat(f32, rect.w);
@@ -181,7 +181,7 @@ pub const Tilemap = struct {
 };
 
 pub const Debug = struct {
-    pub fn drawRect(rect: Rect2i, color: Color) void {
+    pub fn drawRect(rect: Rect, color: Color) void {
         const x = @intToFloat(f32, rect.x - scroll.x);
         const y = @intToFloat(f32, rect.y - scroll.y);
         const w = @intToFloat(f32, rect.w);

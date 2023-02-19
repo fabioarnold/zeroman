@@ -5,7 +5,7 @@ const web = @import("web.zig");
 const keys = @import("keys.zig");
 
 const Renderer = @import("Renderer.zig");
-const Rect2i = Renderer.Rect2i;
+const Rect = Renderer.Rect;
 const Sprite = Renderer.Sprite;
 const Box = @import("Box.zig");
 const Tile = @import("Tile.zig");
@@ -461,7 +461,7 @@ fn setNextRoom(next_room_index: u8) void {
 var death_frame_counter: u32 = 0;
 fn drawDeathEffect(x: i32, y: i32) void {
     const frame = @intCast(i32, (death_frame_counter / 3) % 6);
-    const src_rect = Rect2i.init(frame * 24, 0, 24, 24);
+    const src_rect = Rect.init(frame * 24, 0, 24, 24);
 
     var i: usize = 0;
     while (i < 8) : (i += 1) {
@@ -482,29 +482,29 @@ fn drawTeleportEffect() void {
     var y = game_data.player.box.y + game_data.player.box.h;
     if (frame <= 10 or frame == 15) {
         if (frame != 15) y -= 16 * (10 - frame);
-        const src_rect = Rect2i.init(8, 0, 8, 8);
+        const src_rect = Rect.init(8, 0, 8, 8);
         var i: i32 = 0;
         while (i < 4) : (i += 1) {
             Sprite.drawFrame(teleport_tex, src_rect, x - 4, y + i * 8 - 32);
         }
     } else if (frame <= 12) {
-        Sprite.drawFrame(teleport_tex, Rect2i.init(0, 16, 24, 16), x - 12, y - 16);
-        Sprite.drawFrame(teleport_tex, Rect2i.init(0, 16, 24, 8), x - 12, y - 24);
-        Sprite.drawFrame(teleport_tex, Rect2i.init(8, 8, 8, 8), x - 4, y - 32);
+        Sprite.drawFrame(teleport_tex, Rect.init(0, 16, 24, 16), x - 12, y - 16);
+        Sprite.drawFrame(teleport_tex, Rect.init(0, 16, 24, 8), x - 12, y - 24);
+        Sprite.drawFrame(teleport_tex, Rect.init(8, 8, 8, 8), x - 4, y - 32);
     } else if (frame <= 14) {
-        Sprite.drawFrame(teleport_tex, Rect2i.init(0, 24, 24, 8), x - 12, y - 8);
-        Sprite.drawFrame(teleport_tex, Rect2i.init(8, 8, 8, 8), x - 4, y - 16);
+        Sprite.drawFrame(teleport_tex, Rect.init(0, 24, 24, 8), x - 12, y - 8);
+        Sprite.drawFrame(teleport_tex, Rect.init(8, 8, 8, 8), x - 4, y - 16);
     }
 }
 
 fn drawTitle() void {
-    Sprite.drawFrame(title_tex, Rect2i.init(0, 0, 192, 56), 32, 64);
+    Sprite.drawFrame(title_tex, Rect.init(0, 0, 192, 56), 32, 64);
 }
 
 fn drawHealthbar() void {
-    Sprite.drawFrame(healthbar_tex, Rect2i.init(0, 0, 12, 68), 22, 14);
+    Sprite.drawFrame(healthbar_tex, Rect.init(0, 0, 12, 68), 22, 14);
     const h = 4 + (31 - @as(i32, game_data.player.health)) * 2;
-    Sprite.drawFrame(healthbar_tex, Rect2i.init(12, 0, 12, h), 22, 14);
+    Sprite.drawFrame(healthbar_tex, Rect.init(12, 0, 12, h), 22, 14);
 }
 
 fn draw() void {
@@ -547,12 +547,12 @@ fn draw() void {
 
     // text layer
     text_tex.updateData(text_buffer[0..]);
-    const text_rect = Rect2i.init(0, 0, screen_width, screen_height);
+    const text_rect = Rect.init(0, 0, screen_width, screen_height);
     Renderer.Tilemap.draw(text_tex, font_tex, text_rect);
 }
 
 fn drawRoom(room: Room, room_tex: Renderer.Texture, door1_h: u8, door2_h: u8) void {
-    Renderer.Tilemap.draw(room_tex, tiles_tex, room.bounds.toRect2i());
+    Renderer.Tilemap.draw(room_tex, tiles_tex, room.bounds.toRect());
 
     if (room.door1_y != Room.no_door) {
         var i: u8 = 0;
