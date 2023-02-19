@@ -68,7 +68,7 @@ pub const height = 24;
 const jump_speed = -0x04A5; // mega man 3
 pub const vmax = 0x0700;
 
-pub var sprite: Renderer.Texture = undefined;
+var sprite: Renderer.Texture = undefined;
 
 box: Box = .{ .x = 0, .y = 0, .w = width, .h = height },
 vx: i32 = 0, // fixed point
@@ -124,7 +124,7 @@ pub fn draw(self: *Player) void {
             src_rect.h = 32;
         },
         .climbing => {
-            src_rect.x = 208;
+            src_rect.x = 240;
             src_rect.y = 0;
             src_rect.w = 16;
             src_rect.h = 32;

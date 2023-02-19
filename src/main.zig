@@ -33,6 +33,7 @@ var prev_room_tex: Renderer.Texture = undefined;
 var cur_room_tex: Renderer.Texture = undefined;
 
 var effects_tex: Renderer.Texture = undefined;
+var teleport_tex: Renderer.Texture = undefined;
 
 var font_tex: Renderer.Texture = undefined;
 var text_tex: Renderer.Texture = undefined;
@@ -370,6 +371,7 @@ export fn onInit() void {
     spike_sprite.loadFromUrl("img/spike.png", 16, 24);
     tiles_tex.loadFromUrl("img/needleman.png", 16, 8);
     effects_tex.loadFromUrl("img/effects.png", 120, 24);
+    teleport_tex.loadFromUrl("img/teleport.png", 24, 32);
     font_tex.loadFromUrl("img/font.png", 16, 8);
     clearText();
     text_tex.loadFromData(text_buffer[0..], text_w, text_h);
@@ -477,36 +479,36 @@ fn drawTeleportEffect() void {
         var i: i32 = 0;
         while (i < 4) : (i += 1) {
             Sprite.draw(
-                Player.sprite,
-                Rect2.init(232, 0, 8, 8),
+                teleport_tex,
+                Rect2.init(8, 0, 8, 8),
                 Rect2.init(@intToFloat(f32, x) - 4, @intToFloat(f32, y + i * 8 - 32), 8, 8),
             );
         }
     } else if (frame <= 12) {
         Sprite.draw(
-            Player.sprite,
-            Rect2.init(224, 16, 24, 16),
+            teleport_tex,
+            Rect2.init(0, 16, 24, 16),
             Rect2.init(@intToFloat(f32, x) - 12, @intToFloat(f32, y) - 16, 24, 16),
         );
         Sprite.draw(
-            Player.sprite,
-            Rect2.init(224, 16, 24, 8),
+            teleport_tex,
+            Rect2.init(0, 16, 24, 8),
             Rect2.init(@intToFloat(f32, x) - 12, @intToFloat(f32, y) - 24, 24, 8),
         );
         Sprite.draw(
-            Player.sprite,
-            Rect2.init(232, 8, 8, 8),
+            teleport_tex,
+            Rect2.init(8, 8, 8, 8),
             Rect2.init(@intToFloat(f32, x) - 4, @intToFloat(f32, y) - 32, 8, 8),
         );
     } else if (frame <= 14) {
         Sprite.draw(
-            Player.sprite,
-            Rect2.init(224, 24, 24, 8),
+            teleport_tex,
+            Rect2.init(0, 24, 24, 8),
             Rect2.init(@intToFloat(f32, x) - 12, @intToFloat(f32, y) - 8, 24, 8),
         );
         Sprite.draw(
-            Player.sprite,
-            Rect2.init(232, 8, 8, 8),
+            teleport_tex,
+            Rect2.init(8, 8, 8, 8),
             Rect2.init(@intToFloat(f32, x) - 4, @intToFloat(f32, y) - 16, 8, 8),
         );
     }
