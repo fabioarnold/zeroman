@@ -110,7 +110,7 @@ pub fn hurt(self: *Player, damage: u8) void {
     if (self.invincibility_frames > 0) return;
 
     self.health -|= damage;
-    self.state = .hurting;
+    if (self.state != .sliding) self.state = .hurting;
     self.invincibility_frames = 60;
 }
 
