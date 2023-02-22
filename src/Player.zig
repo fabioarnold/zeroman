@@ -7,6 +7,8 @@ const Rect = Renderer.Rect;
 const Tile = @import("Tile.zig");
 const Room = @import("Room.zig");
 
+const use_joys_sprite = true;
+
 pub const State = enum {
     idle,
     running,
@@ -95,7 +97,11 @@ pub fn reset(self: *Player) void {
 }
 
 pub fn load() void {
-    sprite.loadFromUrl("img/zero.png", 256, 32);
+    if (use_joys_sprite) {
+        sprite.loadFromUrl("img/zero-v2.png", 240, 32);
+    } else {
+        sprite.loadFromUrl("img/zero.png", 256, 32);
+    }
     hurt_fx.loadFromUrl("img/hurt.png", 24, 24);
 }
 
@@ -129,30 +135,33 @@ pub fn draw(self: *Player) void {
             if (self.anim_time > 200) src_rect.x = 24;
             if (self.anim_time > 210) self.anim_time = 0;
         },
-        .sliding => src_rect = Rect.init(144, 6, 32, 26),
+        .sliding => src_rect = if (use_joys_sprite) Rect.init(120, 8, 24, 24) else Rect.init(144, 6, 32, 26),
         .running => {
-            const frame = (self.anim_time % 40) / 10;
-            src_rect.x = switch (frame) {
-                0 => 48,
-                1, 3 => 80,
-                2 => 112,
+            var frame = (self.anim_time % 40) / 10;
+            frame = switch (frame) {
+                0 => 0,
+                1, 3 => 1,
+                2 => 2,
                 else => unreachable,
             };
-            src_rect.w = 32;
+            src_rect.w = if (use_joys_sprite) 24 else 32;
+            src_rect.x = 48 + @intCast(i32, frame) * src_rect.w;
         },
-        .jumping => src_rect = Rect.init(176, 0, 32, 32),
+        .jumping => src_rect = if (use_joys_sprite) Rect.init(144 + @intCast(i32, (self.anim_time % 20) / 10) * 24, 0, 24, 32) else Rect.init(176, 0, 32, 32),
         .climbing => {
-            src_rect = Rect.init(240, 0, 16, 32);
+            src_rect = if (use_joys_sprite) Rect.init(216, 0, 24, 32) else Rect.init(240, 0, 16, 32);
             flip_x = @mod(self.box.y, 20) < 10;
         },
-        .hurting => src_rect = Rect.init(208, 0, 32, 32),
+        .hurting => src_rect = if (use_joys_sprite) Rect.init(192, 0, 24, 32) else Rect.init(208, 0, 32, 32),
     }
     var dst_rect = Rect.init(self.box.x + @divTrunc(self.box.w - src_rect.w, 2), self.box.y - 8, src_rect.w, src_rect.h);
-    switch (self.state) {
-        .climbing => dst_rect.y += 4,
-        .jumping => dst_rect.y += 5,
-        .hurting => dst_rect.y += 6,
-        else => {},
+    if (!use_joys_sprite) {
+        switch (self.state) {
+            .climbing => dst_rect.y += 4,
+            .jumping => dst_rect.y += 5,
+            .hurting => dst_rect.y += 6,
+            else => {},
+        }
     }
 
     if (flip_x) {
