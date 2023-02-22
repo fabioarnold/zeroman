@@ -125,7 +125,7 @@ fn make(step: *std.build.Step) !void {
             for (map.layers) |layer| {
                 if (layer.data) |data| {
                     try writer.writeAll("      .data = &[_]u8{");
-                    for (data) |d, i| {
+                    for (data, 0..) |d, i| {
                         if (i % @intCast(usize, map.width) == 0) {
                             try writer.writeAll("\n        ");
                         }
@@ -173,7 +173,7 @@ fn make(step: *std.build.Step) !void {
             attribs[tile.id] = tile.class;
         }
         try writer.writeAll("  .attribs = &[_]Tile.Attrib{");
-        for (attribs) |a, i| {
+        for (attribs, 0..) |a, i| {
             if (i % @intCast(usize, tileset.columns) == 0) {
                 try writer.writeAll("\n    ");
             }

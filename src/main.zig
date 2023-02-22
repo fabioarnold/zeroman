@@ -127,7 +127,7 @@ pub const GameData = struct {
     }
 
     fn deactivateEnemies(self: *GameData) void {
-        for (self.enemies) |*e| {
+        for (&self.enemies) |*e| {
             e.active = false;
         }
     }
@@ -190,7 +190,7 @@ pub const GameData = struct {
             self.counter += 1;
         }
 
-        for (self.enemies) |*enemy| {
+        for (&self.enemies) |*enemy| {
             if (enemy.active) enemy.tick(rng, self, cur_stage.attribs);
         }
     }
@@ -264,7 +264,7 @@ pub const GameData = struct {
 
         updatePlayer(&self.player);
 
-        for (self.enemies) |*enemy| {
+        for (&self.enemies) |*enemy| {
             if (enemy.active) enemy.tick(rng, self, cur_stage.attribs);
         }
 
