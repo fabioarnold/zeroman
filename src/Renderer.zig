@@ -2,7 +2,6 @@ const gl = @import("webgl.zig");
 
 const fb_width = 256;
 const fb_height = 240;
-var blit_vbo: gl.GLuint = undefined;
 
 pub var scroll: Vec2 = Vec2.init(0, 0);
 
@@ -133,7 +132,7 @@ pub const Sprite = struct {
         };
         gl.glUniformMatrix4fv(blit2d.texmat_loc, 1, gl.GL_FALSE, &texmat);
         gl.glBindTexture(gl.GL_TEXTURE_2D, sprite.handle);
-        gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 4, 4);
+        gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4);
     }
 };
 
@@ -161,7 +160,7 @@ pub const Tilemap = struct {
         gl.glBindTexture(gl.GL_TEXTURE_2D, tiles.handle);
         gl.glActiveTexture(gl.GL_TEXTURE0);
         gl.glBindTexture(gl.GL_TEXTURE_2D, map.handle);
-        gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 4, 4);
+        gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4);
     }
 };
 
@@ -180,7 +179,7 @@ pub const Debug = struct {
         gl.glUseProgram(colored.program);
         gl.glUniformMatrix4fv(colored.mvp_loc, 1, gl.GL_FALSE, &mvp);
         gl.glUniform4f(colored.color_loc, color.r, color.g, color.b, color.a);
-        gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 4, 4);
+        gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4);
     }
 };
 
@@ -215,25 +214,6 @@ pub fn init() void {
     tiled.tiles_size_loc = gl.glGetUniformLocation(tiled.program, "u_tiles_size", "u_tiles_size".len);
     tiled.mvp_loc = gl.glGetUniformLocation(tiled.program, "u_mvp", "u_mvp".len);
     tiled.texmat_loc = gl.glGetUniformLocation(tiled.program, "u_texmat", "u_texmat".len);
-
-    const triangles = [_]f32{
-        -1.0, -1.0,
-        1.0,  -1.0,
-        -1.0, 1.0,
-        1.0,  1.0,
-
-        0.0,  0.0,
-        0.0,  1.0,
-        1.0,  0.0,
-        1.0,  1.0,
-    };
-    gl.glGenBuffers(1, &blit_vbo);
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, blit_vbo);
-    gl.glBufferData(gl.GL_ARRAY_BUFFER, triangles.len * @sizeOf(f32), &triangles, gl.GL_STATIC_DRAW);
-
-    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, blit_vbo);
-    gl.glEnableVertexAttribArray(0);
-    gl.glVertexAttribPointer(0, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, null);
 }
 
 pub fn clear() void {
