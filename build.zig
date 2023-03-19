@@ -21,7 +21,7 @@ pub fn build(b: *std.Build) void {
     }
     {
         // format generated files
-        const fmt = b.addFmt(&.{"src/stages/needleman.zig"});
+        const fmt = b.addFmt(.{ .paths = &.{"src/stages/needleman.zig"} });
         wasm.step.dependOn(&fmt.step);
     }
 }

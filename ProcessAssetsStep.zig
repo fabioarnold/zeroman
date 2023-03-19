@@ -56,7 +56,12 @@ stages: std.ArrayList(Stage),
 pub fn create(b: *std.build.Builder) *ProcessAssetsStep {
     var result = b.allocator.create(ProcessAssetsStep) catch @panic("memory");
     result.* = ProcessAssetsStep{
-        .step = std.build.Step.init(.custom, "process assets", b.allocator, make),
+        .step = std.build.Step.init(.{
+            .id = .custom,
+            .name = "process assets",
+            .owner = b,
+            .makeFn = make,
+        }),
         .builder = b,
         .stages = std.ArrayList(Stage).init(b.allocator),
     };
@@ -83,7 +88,9 @@ fn loadJson(comptime T: type, path: []const u8, allocator: std.mem.Allocator) !T
     });
 }
 
-fn make(step: *std.build.Step) !void {
+fn make(step: *std.build.Step, prog_node: *std.Progress.Node) !void {
+    _ = prog_node;
+
     const self = @fieldParentPtr(ProcessAssetsStep, "step", step);
     const allocator = self.builder.allocator;
 
