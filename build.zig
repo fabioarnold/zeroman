@@ -11,7 +11,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     wasm.rdynamic = true;
-    wasm.install();
+    b.installArtifact(wasm);
 
     const process_assets = ProcessAssetsStep.create(b);
     process_assets.addStage("maps/stages/needleman/needleman.world");
