@@ -7,7 +7,7 @@ const Rect = Renderer.Rect;
 const Tile = @import("Tile.zig");
 const Room = @import("Room.zig");
 
-const use_joys_sprite = true;
+const use_joys_sprite = false;
 
 pub const State = enum {
     idle,
