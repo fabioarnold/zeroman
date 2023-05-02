@@ -174,7 +174,7 @@ fn make(step: *std.build.Step, prog_node: *std.Progress.Node) !void {
         const tileset_path = try std.mem.concat(allocator, u8, &.{ "maps/tilesets/", stage.name, ".tsj" });
         const tileset = try loadJson(TilesetJson, tileset_path, allocator);
         const attribs = try allocator.alloc([]const u8, tileset.tilecount);
-        std.mem.set([]const u8, attribs, "none");
+        @memset(attribs, "none");
         defer allocator.free(attribs);
         for (tileset.tiles) |tile| {
             attribs[tile.id] = tile.class;

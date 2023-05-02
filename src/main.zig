@@ -357,7 +357,7 @@ fn uploadRoomTexture(texture: *Renderer.Texture, room: Room) void {
 }
 
 fn clearText() void {
-    std.mem.set(u8, text_buffer[0..], ' ');
+    @memset(text_buffer[0..], ' ');
 }
 
 fn setText(text: []const u8, x: usize, y: usize) void {
