@@ -20,7 +20,7 @@ pub const State = enum {
     pub fn jsonStringify(value: State, options: std.json.StringifyOptions, out_stream: anytype) !void {
         _ = options;
         try out_stream.writeByte('"');
-        try out_stream.writeAll(std.meta.tagName(value));
+        try out_stream.writeAll(@tagName(value));
         try out_stream.writeByte('"');
     }
 };
