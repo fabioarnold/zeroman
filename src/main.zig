@@ -140,9 +140,11 @@ pub const GameData = struct {
     }
 
     fn loadSnapshot(self: *GameData) void {
+        var buffer: [1000]u8 = undefined;
+        var fba = std.heap.FixedBufferAllocator.init(&buffer);
+        const allocator = fba.allocator();
         const value = web.LocalStorage.getString("snapshot");
-        var ts = std.json.TokenStream.init(value);
-        self.* = std.json.parse(GameData, &ts, .{
+        self.* = std.json.parseFromSlice(GameData, allocator, value, .{
             .ignore_unknown_fields = true,
         }) catch unreachable;
         uploadRoomTexture(&cur_room_tex, self.getCurrentRoom()); // FIXME

@@ -81,9 +81,7 @@ fn loadJson(comptime T: type, path: []const u8, allocator: std.mem.Allocator) !T
     defer file.close();
     const file_contents = try file.readToEndAlloc(allocator, max_file_size);
     defer allocator.free(file_contents);
-    var ts = std.json.TokenStream.init(file_contents);
-    return try std.json.parse(T, &ts, .{
-        .allocator = allocator,
+    return std.json.parseFromSlice(T, allocator, file_contents, .{
         .ignore_unknown_fields = true,
     });
 }
