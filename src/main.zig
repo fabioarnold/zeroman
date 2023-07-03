@@ -565,7 +565,7 @@ fn drawRoom(room: Room, room_tex: Renderer.Texture, door1_h: u8, door2_h: u8) vo
     if (room.door2_y != Room.no_door) {
         var i: u8 = 0;
         while (i < door2_h) : (i += 1) {
-            Renderer.Sprite.draw(door_sprite, room.bounds.x, room.bounds.y + @as(i32, room.door2_y + i) * Tile.size);
+            Renderer.Sprite.draw(door_sprite, room.bounds.x + room.bounds.w - Tile.size, room.bounds.y + @as(i32, room.door2_y + i) * Tile.size);
         }
     }
 
