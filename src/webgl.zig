@@ -7,11 +7,11 @@ pub const GLfloat = f32;
 pub const GLclampf = f32;
 
 // Shaders
-pub extern fn glInitShader(source: [*c]const u8 , len: usize, type: c_uint) c_uint;
+pub extern fn glInitShader(source: [*c]const u8, len: usize, type: c_uint) c_uint;
 pub extern fn glLinkShaderProgram(vertexShaderId: c_uint, fragmentShaderId: c_uint) c_uint;
 
 // Textures
-pub extern fn glTexImage2DUrl(texture: GLuint, url: [*]const u8 , len: usize) void;
+pub extern fn glTexImage2DUrl(texture: GLuint, url: [*]const u8, len: usize) void;
 
 // GL
 pub extern fn glViewport(x: GLint, y: GLint, width: GLsizei, height: GLsizei) void;
@@ -52,7 +52,7 @@ pub extern fn glDeleteTextures(n: GLsizei, textures: [*c]const GLuint) void;
 pub extern fn glDeleteTexture(texture: GLuint) void;
 pub extern fn glBindTexture(target: GLenum, texture: GLuint) void;
 pub extern fn glTexImage2D(target: GLenum, level: GLint, internalformat: GLint, width: GLsizei, height: GLsizei, border: GLint, format: GLenum, type: GLenum, data: [*c]const u8, data_len: usize) void;
-pub extern fn glTexSubImage2D(target: GLenum, level: GLint, xoffset: GLint, yoffset:GLint, width: GLsizei, height: GLsizei, format: GLenum, type: GLenum, data: [*c]const u8) void;
+pub extern fn glTexSubImage2D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, width: GLsizei, height: GLsizei, format: GLenum, type: GLenum, data: [*c]const u8) void;
 pub extern fn glTexParameteri(target: GLenum, pname: GLenum, param: GLint) void;
 pub extern fn glActiveTexture(texture: GLenum) void;
 pub extern fn glGenFramebuffers(_: c_int, _: [*c]c_uint) void;

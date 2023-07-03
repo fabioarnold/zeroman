@@ -80,10 +80,9 @@ fn loadJson(comptime T: type, path: []const u8, allocator: std.mem.Allocator) !T
     const file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
     const file_contents = try file.readToEndAlloc(allocator, max_file_size);
-    defer allocator.free(file_contents);
-    return std.json.parseFromSlice(T, allocator, file_contents, .{
+    return (try std.json.parseFromSlice(T, allocator, file_contents, .{
         .ignore_unknown_fields = true,
-    });
+    })).value;
 }
 
 fn make(step: *std.build.Step, prog_node: *std.Progress.Node) !void {
@@ -110,12 +109,14 @@ fn make(step: *std.build.Step, prog_node: *std.Progress.Node) !void {
         try writer.print("pub const {s} = Stage{{\n", .{stage.name});
         try writer.writeAll("  .rooms = &[_]Room{\n");
 
+        std.debug.print("Processing stage {s}\n", .{stage.path});
         const world = try loadJson(WorldJson, stage.path, allocator);
         for (world.maps) |world_map| {
             const map_path = if (std.fs.path.dirname(stage.path)) |path|
                 try std.fs.path.join(allocator, &.{ path, world_map.fileName })
             else
                 world_map.fileName;
+            std.debug.print("Processing map {s}\n", .{map_path});
             const map = try loadJson(MapJson, map_path, allocator);
 
             try writer.writeAll("    Room{\n");
@@ -131,7 +132,7 @@ fn make(step: *std.build.Step, prog_node: *std.Progress.Node) !void {
                 if (layer.data) |data| {
                     try writer.writeAll("      .data = &[_]u8{");
                     for (data, 0..) |d, i| {
-                        if (i % @intCast(usize, map.width) == 0) {
+                        if (i % @as(usize, @intCast(map.width)) == 0) {
                             try writer.writeAll("\n        ");
                         }
                         try writer.print("{d}, ", .{d - 1});
@@ -179,7 +180,7 @@ fn make(step: *std.build.Step, prog_node: *std.Progress.Node) !void {
         }
         try writer.writeAll("  .attribs = &[_]Tile.Attrib{");
         for (attribs, 0..) |a, i| {
-            if (i % @intCast(usize, tileset.columns) == 0) {
+            if (i % @as(usize, @intCast(tileset.columns)) == 0) {
                 try writer.writeAll("\n    ");
             }
             try writer.print(".{s}, ", .{a});

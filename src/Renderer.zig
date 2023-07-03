@@ -110,7 +110,7 @@ pub const Texture = struct {
 
 pub const Sprite = struct {
     pub fn draw(sprite: Texture, x: i32, y: i32) void {
-        const src_rect = Rect.init(0, 0, @intCast(i32, sprite.width), @intCast(i32, sprite.height));
+        const src_rect = Rect.init(0, 0, @intCast(sprite.width), @intCast(sprite.height));
         const dst_rect = Rect.init(x, y, src_rect.w, src_rect.h);
         drawFromTo(sprite, src_rect, dst_rect);
     }
@@ -121,10 +121,10 @@ pub const Sprite = struct {
     }
 
     pub fn drawFromTo(sprite: Texture, src_rect: Rect, dst_rect: Rect) void {
-        const x = @intToFloat(f32, dst_rect.x - scroll.x);
-        const y = @intToFloat(f32, dst_rect.y - scroll.y);
-        const w = @intToFloat(f32, dst_rect.w);
-        const h = @intToFloat(f32, dst_rect.h);
+        const x: f32 = @floatFromInt(dst_rect.x - scroll.x);
+        const y: f32 = @floatFromInt(dst_rect.y - scroll.y);
+        const w: f32 = @floatFromInt(dst_rect.w);
+        const h: f32 = @floatFromInt(dst_rect.h);
         const px: f32 = 2.0 / @as(f32, fb_width);
         const py: f32 = 2.0 / @as(f32, fb_height);
         const mvp = [16]f32{
@@ -136,13 +136,13 @@ pub const Sprite = struct {
         gl.glUseProgram(blit2d.program);
         gl.glUniformMatrix4fv(blit2d.mvp_loc, 1, gl.GL_FALSE, &mvp);
 
-        const sx = 1.0 / @intToFloat(f32, sprite.width);
-        const sy = 1.0 / @intToFloat(f32, sprite.height);
+        const sx = 1.0 / @as(f32, @floatFromInt(sprite.width));
+        const sy = 1.0 / @as(f32, @floatFromInt(sprite.height));
         const texmat = [16]f32{
-            @intToFloat(f32, src_rect.w) * sx, 0,                                 0, 0,
-            0,                                 @intToFloat(f32, src_rect.h) * sy, 0, 0,
-            0,                                 0,                                 1, 0,
-            @intToFloat(f32, src_rect.x) * sx, @intToFloat(f32, src_rect.y) * sy, 0, 1,
+            @as(f32, @floatFromInt(src_rect.w)) * sx, 0,                                        0, 0,
+            0,                                        @as(f32, @floatFromInt(src_rect.h)) * sy, 0, 0,
+            0,                                        0,                                        1, 0,
+            @as(f32, @floatFromInt(src_rect.x)) * sx, @as(f32, @floatFromInt(src_rect.y)) * sy, 0, 1,
         };
         gl.glUniformMatrix4fv(blit2d.texmat_loc, 1, gl.GL_FALSE, &texmat);
         gl.glBindTexture(gl.GL_TEXTURE_2D, sprite.handle);
@@ -152,10 +152,10 @@ pub const Sprite = struct {
 
 pub const Tilemap = struct {
     pub fn draw(map: Texture, tiles: Texture, rect: Rect) void {
-        const x = @intToFloat(f32, rect.x - scroll.x);
-        const y = @intToFloat(f32, rect.y - scroll.y);
-        const w = @intToFloat(f32, rect.w);
-        const h = @intToFloat(f32, rect.h);
+        const x: f32 = @floatFromInt(rect.x - scroll.x);
+        const y: f32 = @floatFromInt(rect.y - scroll.y);
+        const w: f32 = @floatFromInt(rect.w);
+        const h: f32 = @floatFromInt(rect.h);
         const px = 2.0 / @as(f32, fb_width);
         const py: f32 = 2.0 / @as(f32, fb_height);
         const mvp = [16]f32{
@@ -168,9 +168,9 @@ pub const Tilemap = struct {
         gl.glUniformMatrix4fv(tiled.mvp_loc, 1, gl.GL_FALSE, &mvp);
         gl.glUniformMatrix4fv(tiled.texmat_loc, 1, gl.GL_FALSE, &identity_matrix);
         gl.glUniform1i(tiled.map_loc, 0);
-        gl.glUniform2f(tiled.map_size_loc, @intToFloat(f32, map.width), @intToFloat(f32, map.height));
+        gl.glUniform2f(tiled.map_size_loc, @floatFromInt(map.width), @floatFromInt(map.height));
         gl.glUniform1i(tiled.tiles_loc, 1);
-        gl.glUniform2f(tiled.tiles_size_loc, @intToFloat(f32, tiles.width), @intToFloat(f32, tiles.height));
+        gl.glUniform2f(tiled.tiles_size_loc, @floatFromInt(tiles.width), @floatFromInt(tiles.height));
 
         gl.glActiveTexture(gl.GL_TEXTURE1);
         gl.glBindTexture(gl.GL_TEXTURE_2D, tiles.handle);
@@ -182,10 +182,10 @@ pub const Tilemap = struct {
 
 pub const Debug = struct {
     pub fn drawRect(rect: Rect, color: Color) void {
-        const x = @intToFloat(f32, rect.x - scroll.x);
-        const y = @intToFloat(f32, rect.y - scroll.y);
-        const w = @intToFloat(f32, rect.w);
-        const h = @intToFloat(f32, rect.h);
+        const x: f32 = @floatFromInt(rect.x - scroll.x);
+        const y: f32 = @floatFromInt(rect.y - scroll.y);
+        const w: f32 = @floatFromInt(rect.w);
+        const h: f32 = @floatFromInt(rect.h);
         const px = 2.0 / @as(f32, fb_width);
         const py: f32 = 2.0 / @as(f32, fb_height);
         const mvp = [16]f32{

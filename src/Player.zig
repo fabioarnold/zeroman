@@ -145,9 +145,9 @@ pub fn draw(self: *Player) void {
                 else => unreachable,
             };
             src_rect.w = if (use_joys_sprite) 24 else 32;
-            src_rect.x = 48 + @intCast(i32, frame) * src_rect.w;
+            src_rect.x = 48 + @as(i32, @intCast(frame)) * src_rect.w;
         },
-        .jumping => src_rect = if (use_joys_sprite) Rect.init(144 + @intCast(i32, (self.anim_time % 20) / 10) * 24, 0, 24, 32) else Rect.init(176, 0, 32, 32),
+        .jumping => src_rect = if (use_joys_sprite) Rect.init(144 + @as(i32, @intCast((self.anim_time % 20) / 10)) * 24, 0, 24, 32) else Rect.init(176, 0, 32, 32),
         .climbing => {
             src_rect = if (use_joys_sprite) Rect.init(216, 0, 24, 32) else Rect.init(240, 0, 16, 32);
             flip_x = @mod(self.box.y, 20) < 10;

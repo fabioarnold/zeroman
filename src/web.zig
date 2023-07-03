@@ -19,7 +19,7 @@ pub fn log(
     };
     const prefix = if (scope == .default) ": " else "(" ++ @tagName(scope) ++ "): ";
 
-    const writer = std.io.Writer(void, error{}, writeLog){.context = {}};
+    const writer = std.io.Writer(void, error{}, writeLog){ .context = {} };
     writer.print(level_txt ++ prefix ++ format ++ "\n", args) catch return;
 
     jsLogFlush();
@@ -29,11 +29,11 @@ var sbuf: [4000]u8 = undefined; // FIXME
 
 pub const LocalStorage = struct {
     pub fn setString(key: []const u8, value: []const u8) void {
-        jsStorageSetString(@ptrToInt(key.ptr), key.len, @ptrToInt(value.ptr), value.len);
+        jsStorageSetString(@intFromPtr(key.ptr), key.len, @intFromPtr(value.ptr), value.len);
     }
 
     pub fn getString(key: []const u8) []const u8 {
-        const len = jsStorageGetString(@ptrToInt(key.ptr), key.len, @ptrToInt(&sbuf), sbuf.len);
+        const len = jsStorageGetString(@intFromPtr(key.ptr), key.len, @intFromPtr(&sbuf), sbuf.len);
         return sbuf[0..len];
     }
 };

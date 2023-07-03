@@ -46,7 +46,7 @@ fn index(ctx: Context, response: *http.Response, request: http.Request) !void {
         defer arena.deinit();
         const result = std.ChildProcess.exec(.{
             .allocator = arena.allocator(),
-            .argv = &[_][]const u8 {
+            .argv = &[_][]const u8{
                 "zig", "build", "wasm",
             },
             .cwd = ctx.repo_root,
@@ -66,7 +66,7 @@ fn index(ctx: Context, response: *http.Response, request: http.Request) !void {
                 \\{s}{s}{s}
                 \\--------------------------------------------------------------------------------
                 \\
-                , .{result.stdout, sep, result.stderr});
+            , .{ result.stdout, sep, result.stderr });
             return;
         }
     }

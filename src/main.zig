@@ -144,9 +144,9 @@ pub const GameData = struct {
         var fba = std.heap.FixedBufferAllocator.init(&buffer);
         const allocator = fba.allocator();
         const value = web.LocalStorage.getString("snapshot");
-        self.* = std.json.parseFromSlice(GameData, allocator, value, .{
+        self.* = (std.json.parseFromSlice(GameData, allocator, value, .{
             .ignore_unknown_fields = true,
-        }) catch unreachable;
+        }) catch return).value;
         uploadRoomTexture(&cur_room_tex, self.getCurrentRoom()); // FIXME
     }
 
@@ -220,7 +220,7 @@ pub const GameData = struct {
     fn doLtrDoorTransition(self: *GameData) void {
         mode_frame += 1;
         if (mode_frame <= door_duration) {
-            self.door1_h = 4 - @intCast(u8, @divTrunc(4 * mode_frame, door_duration));
+            self.door1_h = 4 - @as(u8, @intCast(@divTrunc(4 * mode_frame, door_duration)));
         } else if (mode_frame <= door_duration + 64) {
             self.player.tick();
             const cur_room = cur_stage.rooms[self.cur_room_index];
@@ -228,7 +228,7 @@ pub const GameData = struct {
             self.scrollr.x = cur_room.bounds.x - screen_width + @divTrunc((mode_frame - door_duration) * screen_width, 64);
             self.player.box.x = cur_room.bounds.x - 2 * self.player.box.w + @divTrunc(3 * self.player.box.w * (mode_frame - door_duration), 64);
         } else if (mode_frame <= door_duration + 64 + door_duration) {
-            self.door1_h = @intCast(u8, @divTrunc(4 * (mode_frame - 64 - door_duration), door_duration));
+            self.door1_h = @intCast(@divTrunc(4 * (mode_frame - 64 - door_duration), door_duration));
         }
         if (mode_frame == door_duration + 64 + door_duration) {
             room_transition = .none;
@@ -238,7 +238,7 @@ pub const GameData = struct {
     fn doRtlDoorTransition(self: *GameData) void {
         mode_frame += 1;
         if (mode_frame <= door_duration) {
-            self.door2_h = 4 - @intCast(u8, @divTrunc(4 * mode_frame, door_duration));
+            self.door2_h = 4 - @as(u8, @intCast(@divTrunc(4 * mode_frame, door_duration)));
         } else if (mode_frame <= door_duration + 64) {
             self.player.tick();
             // const cur_room = cur_stage.rooms[self.cur_room_index];
@@ -246,7 +246,7 @@ pub const GameData = struct {
             self.scrollr.x = prev_room.bounds.x - @divTrunc((mode_frame - door_duration) * screen_width, 64);
             self.player.box.x = prev_room.bounds.x + self.player.box.w - @divTrunc(3 * self.player.box.w * (mode_frame - door_duration), 64);
         } else if (mode_frame <= door_duration + 64 + door_duration) {
-            self.door2_h = @intCast(u8, @divTrunc(4 * (mode_frame - 64 - door_duration), door_duration));
+            self.door2_h = @intCast(@divTrunc(4 * (mode_frame - 64 - door_duration), door_duration));
         }
         if (mode_frame == door_duration + 64 + door_duration) {
             room_transition = .none;
@@ -305,7 +305,7 @@ pub const GameData = struct {
         if (cur_room.door1_y != Room.no_door) {
             var door_box = Box{
                 .x = cur_room.bounds.x,
-                .y = cur_room.bounds.y + @intCast(i32, cur_room.door1_y) * Tile.size,
+                .y = cur_room.bounds.y + @as(i32, @intCast(cur_room.door1_y)) * Tile.size,
                 .w = Tile.size,
                 .h = 4 * Tile.size,
             };
@@ -323,7 +323,7 @@ pub const GameData = struct {
         if (cur_room.door2_y != Room.no_door) {
             var door_box = Box{
                 .x = cur_room.bounds.x + cur_room.bounds.w - Tile.size,
-                .y = cur_room.bounds.y + @intCast(i32, cur_room.door2_y) * Tile.size,
+                .y = cur_room.bounds.y + @as(i32, @intCast(cur_room.door2_y)) * Tile.size,
                 .w = Tile.size,
                 .h = 4 * Tile.size,
             };
@@ -462,15 +462,15 @@ fn setNextRoom(next_room_index: u8) void {
 
 var death_frame_counter: u32 = 0;
 fn drawDeathEffect(x: i32, y: i32) void {
-    const frame = @intCast(i32, (death_frame_counter / 3) % 6);
+    const frame = @as(i32, @intCast((death_frame_counter / 3) % 6));
     const src_rect = Rect.init(frame * 24, 0, 24, 24);
 
     var i: usize = 0;
     while (i < 8) : (i += 1) {
-        const angle: f32 = std.math.pi * @intToFloat(f32, i) / 4.0;
-        const r: f32 = 2 * @intToFloat(f32, death_frame_counter);
-        const dx = x + @floatToInt(i32, r * @cos(angle));
-        const dy = y + @floatToInt(i32, r * @sin(angle));
+        const angle: f32 = std.math.pi * @as(f32, @floatFromInt(i)) / 4.0;
+        const r: f32 = 2 * @as(f32, @floatFromInt(death_frame_counter));
+        const dx = x + @as(i32, @intFromFloat(r * @cos(angle)));
+        const dy = y + @as(i32, @intFromFloat(r * @sin(angle)));
         Sprite.drawFrame(effects_tex, src_rect, dx, dy);
     }
 

@@ -35,10 +35,10 @@ pub fn clipX(self: Room, attribs: []const Tile.Attrib, mover: Box, amount: i32) 
     else
         Box{ .x = box.x + clipped, .y = box.y, .w = -clipped, .h = box.h };
 
-    const start_x = @intCast(u16, std.math.clamp(@divTrunc(area.x, Tile.size), 0, self.width - 1));
-    const stop_x = @intCast(u16, std.math.clamp(@divTrunc(area.x + area.w - 1, Tile.size), 0, self.width - 1));
-    const start_y = @intCast(u16, std.math.clamp(@divTrunc(area.y, Tile.size), 0, self.height - 1));
-    const stop_y = @intCast(u16, std.math.clamp(@divTrunc(area.y + area.h - 1, Tile.size), 0, self.height - 1));
+    const start_x: u16 = @intCast(std.math.clamp(@divTrunc(area.x, Tile.size), 0, self.width - 1));
+    const stop_x: u16 = @intCast(std.math.clamp(@divTrunc(area.x + area.w - 1, Tile.size), 0, self.width - 1));
+    const start_y: u16 = @intCast(std.math.clamp(@divTrunc(area.y, Tile.size), 0, self.height - 1));
+    const stop_y: u16 = @intCast(std.math.clamp(@divTrunc(area.y + area.h - 1, Tile.size), 0, self.height - 1));
 
     var y = start_y;
     while (y <= stop_y) : (y += 1) {
@@ -69,10 +69,10 @@ pub fn clipY(self: Room, attribs: []const Tile.Attrib, mover: Box, amount: i32) 
     else
         Box{ .x = box.x, .y = box.y + clipped, .w = box.w, .h = -clipped };
 
-    const start_x = @intCast(u16, std.math.clamp(@divTrunc(area.x, Tile.size), 0, self.width - 1));
-    const stop_x = @intCast(u16, std.math.clamp(@divTrunc(area.x + area.w - 1, Tile.size), 0, self.width - 1));
-    const start_y = @intCast(u16, std.math.clamp(@divTrunc(area.y, Tile.size), 0, self.height - 1));
-    const stop_y = @intCast(u16, std.math.clamp(@divTrunc(area.y + area.h - 1, Tile.size), 0, self.height - 1));
+    const start_x: u16 = @intCast(std.math.clamp(@divTrunc(area.x, Tile.size), 0, self.width - 1));
+    const stop_x: u16 = @intCast(std.math.clamp(@divTrunc(area.x + area.w - 1, Tile.size), 0, self.width - 1));
+    const start_y: u16 = @intCast(std.math.clamp(@divTrunc(area.y, Tile.size), 0, self.height - 1));
+    const stop_y: u16 = @intCast(std.math.clamp(@divTrunc(area.y + area.h - 1, Tile.size), 0, self.height - 1));
 
     var y = start_y;
     while (y <= stop_y) : (y += 1) {
@@ -99,10 +99,10 @@ pub fn overlap(self: Room, attribs: []const Tile.Attrib, mover: Box) bool {
     // move mover into room space
     const box = Box{ .x = mover.x - self.bounds.x, .y = mover.y - self.bounds.y, .w = mover.w, .h = mover.h };
 
-    const start_x = @intCast(u16, std.math.clamp(@divTrunc(box.x, Tile.size), 0, self.width - 1));
-    const stop_x = @intCast(u16, std.math.clamp(@divTrunc(box.x + box.w - 1, Tile.size), 0, self.width - 1));
-    const start_y = @intCast(u16, std.math.clamp(@divTrunc(box.y, Tile.size), 0, self.height - 1));
-    const stop_y = @intCast(u16, std.math.clamp(@divTrunc(box.y + box.h - 1, Tile.size), 0, self.height - 1));
+    const start_x: u16 = @intCast(std.math.clamp(@divTrunc(box.x, Tile.size), 0, self.width - 1));
+    const stop_x: u16 = @intCast(std.math.clamp(@divTrunc(box.x + box.w - 1, Tile.size), 0, self.width - 1));
+    const start_y: u16 = @intCast(std.math.clamp(@divTrunc(box.y, Tile.size), 0, self.height - 1));
+    const stop_y: u16 = @intCast(std.math.clamp(@divTrunc(box.y + box.h - 1, Tile.size), 0, self.height - 1));
 
     var y = start_y;
     while (y <= stop_y) : (y += 1) {
@@ -128,6 +128,6 @@ pub fn getTileAttribAtPixel(self: Room, attribs: []const Tile.Attrib, x: i32, y:
 
 fn getTileAttribAtTile(self: Room, attribs: []const Tile.Attrib, tx: i32, ty: i32) Tile.Attrib {
     if (tx < 0 or ty < 0 or tx >= self.width or ty >= self.height) return .none;
-    const ti = self.data[@intCast(usize, ty * self.width + tx)];
+    const ti = self.data[@as(usize, @intCast(ty * self.width + tx))];
     return attribs[ti];
 }

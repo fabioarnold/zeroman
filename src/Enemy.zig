@@ -64,7 +64,7 @@ const GopherState = enum(u8) {
 
 fn tickGopher(self: *Self, r: std.rand.Random, game: *GameData, attribs: []const Attrib) void {
     const room = game.getCurrentRoom();
-    const state = @ptrCast(*GopherState, &self.state);
+    const state: *GopherState = @ptrCast(&self.state);
     switch (state.*) {
         .idle => {
             self.frame = 0;
