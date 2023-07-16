@@ -406,6 +406,12 @@ export fn onKeyDown(key: c_uint) void {
     }
 }
 
+export fn onBeforeUnload() void {
+    if (builtin.mode == .Debug) {
+        game_data.saveSnapshot();
+    }
+}
+
 fn updatePlayer(player: *Player) void {
     player.tick();
 

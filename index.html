@@ -167,8 +167,13 @@
         pressedKeys[e.keyCode] = false;
       }
 
+      function onBeforeUnload(e) {
+        instance.exports.onBeforeUnload();
+      }
+
       document.addEventListener('keydown', onKeyDown);
       document.addEventListener('keyup', onKeyUp);
+      addEventListener("beforeunload", onBeforeUnload);
 
       function step(timestamp) {
         onAnimationFrame(timestamp);
