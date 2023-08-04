@@ -6,6 +6,8 @@ Try it: https://zeroman.space
 
 ## Building and running
 
+Needs [Zig](https://ziglang.org/download/) version 0.11.0.
+
 ```bash
 # Get the source
 $ git clone https://github.com/fabioarnold/zeroman
@@ -15,7 +17,5 @@ $ cd zeroman
 $ zig build
 
 # Run an HTTP server
-$ zig build serve
-
-# NOTE that the HTTP server will automatically rebuild the game whenever it is fetched
+$ python3 -m http.server
 ```
