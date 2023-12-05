@@ -93,7 +93,7 @@ pub fn load() void {
     if (use_joys_sprite) {
         sprite.loadFromUrl("img/zero-v2.png", 240, 32);
     } else {
-        sprite.loadFromUrl("img/zero.png", 256, 32);
+        sprite.loadFromUrl("img/zero.png", 256, 64);
     }
     hurt_fx.loadFromUrl("img/hurt.png", 24, 24);
 }
