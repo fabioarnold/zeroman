@@ -150,7 +150,7 @@
       return false;
     }
 
-    fetchAndInstantiate('zig-out/lib/main.wasm', { env }).then(instance => {
+    fetchAndInstantiate('zig-out/bin/main.wasm', { env }).then(instance => {
       memory = instance.exports.memory;
       instance.exports.onInit();
 

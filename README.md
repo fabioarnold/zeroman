@@ -6,7 +6,7 @@ Try it: https://zeroman.space
 
 ## Building and running
 
-Needs [Zig](https://ziglang.org/download/) version 0.11.0.
+Needs [Zig](https://ziglang.org/download/) master.
 
 ```bash
 # Get the source

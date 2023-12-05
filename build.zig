@@ -4,13 +4,14 @@ const GitRepoStep = @import("GitRepoStep.zig");
 
 pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
-    const wasm = b.addSharedLibrary(.{
+    const wasm = b.addExecutable(.{
         .name = "main",
         .root_source_file = .{ .path = "src/main.zig" },
         .target = .{ .cpu_arch = .wasm32, .os_tag = .freestanding },
         .optimize = optimize,
     });
     wasm.rdynamic = true;
+    wasm.entry = .disabled;
     b.installArtifact(wasm);
 
     const process_assets = ProcessAssetsStep.create(b);

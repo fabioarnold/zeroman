@@ -54,7 +54,7 @@ builder: *std.build.Builder,
 stages: std.ArrayList(Stage),
 
 pub fn create(b: *std.build.Builder) *ProcessAssetsStep {
-    var result = b.allocator.create(ProcessAssetsStep) catch @panic("memory");
+    const result = b.allocator.create(ProcessAssetsStep) catch @panic("memory");
     result.* = ProcessAssetsStep{
         .step = std.build.Step.init(.{
             .id = .custom,

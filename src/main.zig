@@ -357,7 +357,7 @@ fn clearText() void {
 
 fn setText(text: []const u8, x: usize, y: usize) void {
     std.debug.assert(x < 32 and y < 30);
-    std.mem.copy(u8, text_buffer[text_w * y + x ..], text);
+    @memcpy(text_buffer[text_w * y + x ..][0..text.len], text);
 }
 
 export fn onInit() void {

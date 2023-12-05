@@ -189,7 +189,7 @@ fn doNoClipMovement(self: *Player, input: Input) void {
 
 fn doMovement(player: *Player, room: Room, attribs: []const Tile.Attrib, input: Input, prev_input: Input) void {
     player.vx = 0;
-    var on_ground = room.clipY(attribs, player.box, 1) == 0; // moving 1 pixel down
+    const on_ground = room.clipY(attribs, player.box, 1) == 0; // moving 1 pixel down
     if (!on_ground) {
         // apply gravity
         player.vy += 0x40;
@@ -262,7 +262,7 @@ fn doClimbing(player: *Player, room: Room, attribs: []const Tile.Attrib, input: 
         player.vy = -0x0100;
     }
     if (input.down) {
-        var on_ground = room.clipY(attribs, player.box, 1) == 0; // moving 1 pixel down
+        const on_ground = room.clipY(attribs, player.box, 1) == 0; // moving 1 pixel down
         if (on_ground) {
             player.state = .idle;
         } else {
@@ -304,7 +304,7 @@ fn doSliding(player: *Player, room: Room, attribs: []const Tile.Attrib, input: I
     }
     player.vx = if (player.face_left) -0x300 else 0x300;
 
-    var on_ground = room.clipY(attribs, player.box, 1) == 0; // moving 1 pixel down
+    const on_ground = room.clipY(attribs, player.box, 1) == 0; // moving 1 pixel down
     if (input.jump and !prev_input.jump and on_ground) {
         player.vy = jump_speed;
         stand_up = true;
@@ -327,7 +327,7 @@ fn doSliding(player: *Player, room: Room, attribs: []const Tile.Attrib, input: I
 }
 
 fn doHurting(player: *Player, room: Room, attribs: []const Tile.Attrib) void {
-    var on_ground = room.clipY(attribs, player.box, 1) == 0; // moving 1 pixel down
+    const on_ground = room.clipY(attribs, player.box, 1) == 0; // moving 1 pixel down
     if (!on_ground) {
         // apply gravity
         player.vy += 0x40;

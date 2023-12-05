@@ -47,7 +47,7 @@ pub fn create(b: *std.build.Builder, opt: struct {
     sha_check: ShaCheck = .warn,
     fetch_enabled: ?bool = null,
 }) *GitRepoStep {
-    var result = b.allocator.create(GitRepoStep) catch @panic("memory");
+    const result = b.allocator.create(GitRepoStep) catch @panic("memory");
     const name = std.fs.path.basename(opt.url);
     result.* = GitRepoStep{
         .step = std.build.Step.init(.custom, "clone a git repository", b.allocator, make),
