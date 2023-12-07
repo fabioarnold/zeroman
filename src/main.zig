@@ -89,6 +89,7 @@ pub const GameData = struct {
         self.counter = 0;
         self.input = std.mem.zeroes(Player.Input);
         self.prev_input = std.mem.zeroes(Player.Input);
+        self.player.reset();
         self.cur_room_index = 0;
         self.prev_room_index = 0;
         const room = self.getCurrentRoom();
@@ -103,7 +104,6 @@ pub const GameData = struct {
         }
         self.deactivateEnemies();
         self.activateEnemies(room);
-        self.player.reset();
     }
 
     fn activateEnemies(self: *GameData, room: Room) void {
@@ -392,7 +392,7 @@ export fn onKeyDown(key: c_uint) void {
         switch (key) {
             keys.KEY_1 => game_data.saveSnapshot(),
             keys.KEY_2 => game_data.loadSnapshot(),
-            keys.KEY_3 => game_data.player.no_clip = !game_data.player.no_clip,
+            keys.KEY_3 => Player.no_clip = !Player.no_clip,
             keys.KEY_4 => game_data.player.hurt(1),
             else => {},
         }
@@ -416,7 +416,7 @@ fn updatePlayer(player: *Player) void {
     // physics
     const amount_x = player.vx >> 8;
     const amount_y = player.vy >> 8;
-    if (player.no_clip) {
+    if (Player.no_clip) {
         player.box.x += amount_x;
         player.box.y += amount_y;
     } else {
