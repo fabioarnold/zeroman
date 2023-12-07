@@ -60,6 +60,13 @@ pub const Input = struct {
     }
 };
 
+const Shot = struct {
+    x: i32 = 0,
+    y: i32 = 0,
+    vx: i32 = 0,
+    active: bool = false,
+};
+
 const Player = @This();
 
 pub const width = 16;
@@ -70,6 +77,7 @@ const max_health = 31;
 
 var sprite: Renderer.Texture = undefined;
 var hurt_fx: Renderer.Texture = undefined;
+var shot_sprite: Renderer.Texture = undefined;
 pub var no_clip: bool = false;
 
 box: Box = .{ .x = 0, .y = 0, .w = width, .h = height },
@@ -82,6 +90,7 @@ invincibility_frames: u8 = 0,
 anim_time: u32 = 0,
 slide_frames: u8 = 0,
 shoot_frames: u8 = 0,
+shots: [16]Shot = [_]Shot{.{}} ** 16,
 
 pub fn reset(self: *Player) void {
     self.* = .{};
@@ -94,6 +103,7 @@ pub fn load() void {
         sprite.loadFromUrl("img/zero.png", 256, 64);
     }
     hurt_fx.loadFromUrl("img/hurt.png", 24, 24);
+    shot_sprite.loadFromUrl("img/shot.png", 8, 8);
 }
 
 pub fn tick(self: *Player) void {
@@ -170,6 +180,12 @@ pub fn draw(self: *Player) void {
         src_rect.w = -src_rect.w;
     }
     Renderer.Sprite.drawFromTo(sprite, src_rect, dst_rect);
+
+    for (self.shots) |shot| {
+        if (shot.active) {
+            Renderer.Sprite.draw(shot_sprite, shot.x - 4, shot.y - 4);
+        }
+    }
 }
 
 pub fn handleInput(self: *Player, room: Room, attribs: []const Tile.Attrib, input: Input, prev_input: Input) void {
@@ -191,10 +207,61 @@ pub fn handleInput(self: *Player, room: Room, attribs: []const Tile.Attrib, inpu
     }
 }
 
+pub fn move(self: *Player, room: Room, attribs: []const Tile.Attrib) void {
+    const amount_x = self.vx >> 8;
+    const amount_y = self.vy >> 8;
+    if (no_clip) {
+        self.box.x += amount_x;
+        self.box.y += amount_y;
+    } else {
+        const clipped_x = room.clipX(attribs, self.box, amount_x);
+        self.box.x += clipped_x;
+        const clipped_y = room.clipY(attribs, self.box, amount_y);
+        self.box.y += clipped_y;
+        const blocked_y = clipped_y != amount_y;
+
+        if (blocked_y and self.vy < 0) self.vy = 0; // bump head
+    }
+
+    for (&self.shots) |*shot| {
+        if (shot.active) {
+            const box = Box{.x = shot.x-4, .y = shot.y-3, .w = 8, .h = 6};
+            const clipped_x = room.clipX(attribs, box, shot.vx);
+            if (clipped_x != shot.vx) {
+                shot.active = false;
+            } else {
+                shot.x += clipped_x;
+            }
+        }
+    }
+}
+
 fn doShooting(self: *Player, input: Input, prev_input: Input) void {
     if (input.shoot and !prev_input.shoot) {
         self.shoot_frames = 16;
-        // TODO: spawn shot
+        for (&self.shots) |*shot| {
+            if (!shot.active) {
+                shot.active = true;
+                shot.vx = if (self.face_left) -4 else 4;
+                switch (self.state) {
+                    .idle, .running => {
+                        shot.x = self.box.x + @divTrunc(self.box.w, 2);
+                        shot.x += if (self.face_left) -19 else 19;
+                        shot.y = self.box.y + 11;
+                    },
+                    .jumping => {
+                        shot.x = self.box.x + @divTrunc(self.box.w, 2);
+                        shot.x += if (self.face_left) -15 else 15;
+                        shot.y = self.box.y + 8;
+                    },
+                    .climbing => {
+                        @panic("TODO");
+                    },
+                    else => {},
+                }
+                break;
+            }
+        }
     }
 }
 
