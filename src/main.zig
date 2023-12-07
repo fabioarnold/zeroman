@@ -263,6 +263,20 @@ pub const GameData = struct {
             if (enemy.active) enemy.tick(rng, self, cur_stage.attribs);
         }
 
+        // check player shots
+        for (&self.player.shots) |*shot| {
+            if (shot.active) {
+                const box = Box{ .x = shot.x - 4, .y = shot.y - 3, .w = 8, .h = 6 };
+                for (&self.enemies) |*enemy| {
+                    if (enemy.active and box.overlaps(enemy.box)) {
+                        enemy.hurt(1);
+                        shot.active = false;
+                        break;
+                    }
+                }
+            }
+        }
+
         if (findNextRoom(cur_stage.rooms, self.cur_room_index, self.player.box)) |next_room_index| {
             setNextRoom(next_room_index);
             room_transition = .vertical;
