@@ -24,6 +24,7 @@ pub const Input = struct {
     up: bool,
     down: bool,
     jump: bool,
+    shoot: bool,
 
     pub fn combine(a: Input, b: Input) Input {
         return .{
@@ -32,6 +33,7 @@ pub const Input = struct {
             .up = a.up or b.up,
             .down = a.down or b.down,
             .jump = a.jump or b.jump,
+            .shoot = a.shoot or b.shoot,
         };
     }
 
@@ -42,6 +44,7 @@ pub const Input = struct {
             .up = web.isKeyDown(keys.KEY_UP) or web.isKeyDown(keys.KEY_W),
             .down = web.isKeyDown(keys.KEY_DOWN) or web.isKeyDown(keys.KEY_S),
             .jump = web.isKeyDown(keys.KEY_SPACE),
+            .shoot = web.isKeyDown(keys.KEY_SHIFT),
         };
     }
 
@@ -52,6 +55,7 @@ pub const Input = struct {
             .up = web.isButtonDown(12),
             .down = web.isButtonDown(13),
             .jump = web.isButtonDown(0),
+            .shoot = web.isButtonDown(1),
         };
     }
 };
@@ -66,6 +70,7 @@ const max_health = 31;
 
 var sprite: Renderer.Texture = undefined;
 var hurt_fx: Renderer.Texture = undefined;
+pub var no_clip: bool = false;
 
 box: Box = .{ .x = 0, .y = 0, .w = width, .h = height },
 vx: i32 = 0, // fixed point
@@ -76,17 +81,10 @@ health: u8 = max_health,
 invincibility_frames: u8 = 0,
 anim_time: u32 = 0,
 slide_frames: u8 = 0,
-no_clip: bool = false,
+shoot_frames: u8 = 0,
 
 pub fn reset(self: *Player) void {
-    self.vx = 0;
-    self.vy = 0;
-    self.state = .idle;
-    self.face_left = false;
-    self.health = max_health;
-    self.invincibility_frames = 0;
-    self.anim_time = 0;
-    self.slide_frames = 0;
+    self.* = .{};
 }
 
 pub fn load() void {
@@ -100,12 +98,13 @@ pub fn load() void {
 
 pub fn tick(self: *Player) void {
     self.anim_time +%= 1;
-    self.slide_frames -|= 1;
     self.invincibility_frames -|= 1;
+    self.slide_frames -|= 1;
+    self.shoot_frames -|= 1;
 }
 
 pub fn hurt(self: *Player, damage: u8) void {
-    if (self.no_clip) return;
+    if (no_clip) return;
     if (self.invincibility_frames > 0) return;
 
     self.health -|= damage;
@@ -122,11 +121,14 @@ pub fn draw(self: *Player) void {
     }
 
     var src_rect = Rect.init(0, 0, 24, 32);
+    const shooting = self.shoot_frames > 0;
     var flip_x = self.face_left;
     switch (self.state) {
         .idle => {
-            if (self.anim_time > 200) src_rect.x = 24;
-            if (self.anim_time > 210) self.anim_time = 0;
+            if (!shooting) {
+                if (self.anim_time > 200) src_rect.x = 24;
+                if (self.anim_time > 210) self.anim_time = 0;
+            }
         },
         .sliding => src_rect = if (use_joys_sprite) Rect.init(120, 8, 24, 24) else Rect.init(144, 6, 32, 26),
         .running => {
@@ -147,7 +149,14 @@ pub fn draw(self: *Player) void {
         },
         .hurting => src_rect = if (use_joys_sprite) Rect.init(192, 0, 24, 32) else Rect.init(208, 0, 32, 32),
     }
+    if (shooting) {
+        src_rect.y += 32;
+        src_rect.w = 32;
+    }
     var dst_rect = Rect.init(self.box.x + @divTrunc(self.box.w - src_rect.w, 2), self.box.y - 8, src_rect.w, src_rect.h);
+    if (shooting and self.state == .idle) {
+        dst_rect.x += if (flip_x) -4 else 4;
+    }
     if (!use_joys_sprite) {
         switch (self.state) {
             .climbing => dst_rect.y += 4,
@@ -156,7 +165,6 @@ pub fn draw(self: *Player) void {
             else => {},
         }
     }
-
     if (flip_x) {
         src_rect.x += src_rect.w;
         src_rect.w = -src_rect.w;
@@ -165,15 +173,28 @@ pub fn draw(self: *Player) void {
 }
 
 pub fn handleInput(self: *Player, room: Room, attribs: []const Tile.Attrib, input: Input, prev_input: Input) void {
-    if (self.no_clip) {
+    if (no_clip) {
         self.doNoClipMovement(input);
     } else {
         switch (self.state) {
-            .idle, .running, .jumping => self.doMovement(room, attribs, input, prev_input),
-            .climbing => self.doClimbing(room, attribs, input, prev_input),
+            .idle, .running, .jumping => {
+                self.doMovement(room, attribs, input, prev_input);
+                self.doShooting(input, prev_input);
+            },
+            .climbing => {
+                self.doClimbing(room, attribs, input, prev_input);
+                self.doShooting(input, prev_input);
+            },
             .sliding => self.doSliding(room, attribs, input, prev_input),
             .hurting => self.doHurting(room, attribs),
         }
+    }
+}
+
+fn doShooting(self: *Player, input: Input, prev_input: Input) void {
+    if (input.shoot and !prev_input.shoot) {
+        self.shoot_frames = 16;
+        // TODO: spawn shot
     }
 }
 
@@ -224,6 +245,7 @@ fn doMovement(player: *Player, room: Room, attribs: []const Tile.Attrib, input: 
                 player.box.h -= 8;
             }
             player.slide_frames = 24;
+            player.shoot_frames = 0;
             player.vy = 0;
             return;
         }
