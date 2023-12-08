@@ -27,6 +27,13 @@ pub fn drawDeathEffect(x: i32, y: i32, counter: u32) void {
     }
 }
 
+pub fn drawDeathEffectSmall(x: i32, y: i32, counter: u8) void {
+    const frame = counter;
+    if (frame > 4) return;
+    const src_rect = Rect.init(frame * 24, 0, 24, 24);
+    Sprite.drawFrame(effects_tex, src_rect, x - 12, y - 12);
+}
+
 pub fn drawTeleportEffect(player_x: i32, player_y: i32, counter: u8) void {
     if (counter < 32) return;
     const frame: i32 = counter - 32;
