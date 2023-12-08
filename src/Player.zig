@@ -8,8 +8,6 @@ const Tile = @import("Tile.zig");
 const Room = @import("Room.zig");
 const effects = @import("effects.zig");
 
-const use_joys_sprite = false;
-
 pub const State = enum {
     idle,
     running,
@@ -97,11 +95,7 @@ pub fn reset(self: *Player) void {
 }
 
 pub fn load() void {
-    if (use_joys_sprite) {
-        sprite.loadFromUrl("img/zero-v2.png", 240, 32);
-    } else {
-        sprite.loadFromUrl("img/zero.png", 256, 64);
-    }
+    sprite.loadFromUrl("img/zero.png", 256, 64);
     shot_sprite.loadFromUrl("img/shot.png", 8, 8);
 }
 
@@ -139,7 +133,7 @@ pub fn draw(self: *Player) void {
                 if (self.anim_time > 210) self.anim_time = 0;
             }
         },
-        .sliding => src_rect = if (use_joys_sprite) Rect.init(120, 8, 24, 24) else Rect.init(144, 6, 32, 26),
+        .sliding => src_rect = Rect.init(144, 6, 32, 26),
         .running => {
             var frame = (self.anim_time % 40) / 10;
             frame = switch (frame) {
@@ -148,31 +142,37 @@ pub fn draw(self: *Player) void {
                 2 => 2,
                 else => unreachable,
             };
-            src_rect.w = if (use_joys_sprite) 24 else 32;
+            src_rect.w = 32;
             src_rect.x = 48 + @as(i32, @intCast(frame)) * src_rect.w;
         },
-        .jumping => src_rect = if (use_joys_sprite) Rect.init(144 + @as(i32, @intCast((self.anim_time % 20) / 10)) * 24, 0, 24, 32) else Rect.init(176, 0, 32, 32),
+        .jumping => src_rect = Rect.init(176, 0, 32, 32),
         .climbing => {
-            src_rect = if (use_joys_sprite) Rect.init(216, 0, 24, 32) else Rect.init(240, 0, 16, 32);
-            flip_x = @mod(self.box.y, 20) < 10;
+            if (shooting) {
+                src_rect = Rect.init(208, 0, 24, 32);
+            } else {
+                src_rect = Rect.init(240, 0, 16, 32);
+                flip_x = @mod(self.box.y, 20) < 10;
+            }
         },
-        .hurting => src_rect = if (use_joys_sprite) Rect.init(192, 0, 24, 32) else Rect.init(208, 0, 32, 32),
+        .hurting => src_rect = Rect.init(208, 0, 32, 32),
     }
     if (shooting) {
         src_rect.y += 32;
         src_rect.w = 32;
     }
     var dst_rect = Rect.init(self.box.x + @divTrunc(self.box.w - src_rect.w, 2), self.box.y - 8, src_rect.w, src_rect.h);
-    if (shooting and self.state == .idle) {
-        dst_rect.x += if (flip_x) -4 else 4;
-    }
-    if (!use_joys_sprite) {
-        switch (self.state) {
-            .climbing => dst_rect.y += 4,
-            .jumping => dst_rect.y += 5,
-            .hurting => dst_rect.y += 6,
-            else => {},
+    if (shooting) {
+        if (self.state == .idle) {
+            dst_rect.x += if (flip_x) -4 else 4;
+        } else if (self.state == .climbing) {
+            dst_rect.x += if (flip_x) -8 else 8;
         }
+    }
+    switch (self.state) {
+        .climbing => dst_rect.y += 4,
+        .jumping => dst_rect.y += 5,
+        .hurting => dst_rect.y += 6,
+        else => {},
     }
     if (flip_x) {
         src_rect.x += src_rect.w;
@@ -224,7 +224,7 @@ pub fn move(self: *Player, room: Room, attribs: []const Tile.Attrib) void {
 
     for (&self.shots) |*shot| {
         if (shot.active) {
-            const box = Box{.x = shot.x-4, .y = shot.y-3, .w = 8, .h = 6};
+            const box = Box{ .x = shot.x - 4, .y = shot.y - 3, .w = 8, .h = 6 };
             const clipped_x = room.clipX(attribs, box, shot.vx);
             if (clipped_x != shot.vx) {
                 shot.active = false;
@@ -254,7 +254,9 @@ fn doShooting(self: *Player, input: Input, prev_input: Input) void {
                         shot.y = self.box.y + 8;
                     },
                     .climbing => {
-                        @panic("TODO");
+                        shot.x = self.box.x + @divTrunc(self.box.w, 2);
+                        shot.x += if (self.face_left) -15 else 15;
+                        shot.y = self.box.y + 9;
                     },
                     else => {},
                 }
