@@ -6,6 +6,7 @@ const Renderer = @import("Renderer.zig");
 const Rect = Renderer.Rect;
 const Tile = @import("Tile.zig");
 const Room = @import("Room.zig");
+const effects = @import("effects.zig");
 
 const use_joys_sprite = false;
 
@@ -76,7 +77,6 @@ pub const vmax = 0x0700;
 const max_health = 31;
 
 var sprite: Renderer.Texture = undefined;
-var hurt_fx: Renderer.Texture = undefined;
 var shot_sprite: Renderer.Texture = undefined;
 pub var no_clip: bool = false;
 
@@ -102,7 +102,6 @@ pub fn load() void {
     } else {
         sprite.loadFromUrl("img/zero.png", 256, 64);
     }
-    hurt_fx.loadFromUrl("img/hurt.png", 24, 24);
     shot_sprite.loadFromUrl("img/shot.png", 8, 8);
 }
 
@@ -125,7 +124,7 @@ pub fn hurt(self: *Player, damage: u8) void {
 pub fn draw(self: *Player) void {
     if (self.invincibility_frames % 6 >= 3) {
         if (self.state == .hurting) {
-            Renderer.Sprite.draw(hurt_fx, self.box.x - 4, self.box.y);
+            Renderer.Sprite.draw(effects.hurt_fx, self.box.x - 4, self.box.y);
         }
         return;
     }
