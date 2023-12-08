@@ -21,8 +21,9 @@ box: Box = undefined,
 state: u8 = 0,
 health: u8 = 0,
 invincibility_frames: u8 = 0,
+death_frames: u8 = 0,
 frame: u8 = 0,
-counter: i32 = 0,
+counter: u32 = 0,
 face_left: bool = false,
 
 pub fn load() void {
@@ -44,19 +45,26 @@ pub fn activate(self: *Self, @"type": Type, box: Box) void {
 }
 
 pub fn tick(self: *Self, r: std.rand.Random, game: *GameData, attribs: []const Attrib) void {
+    if (self.health == 0) {
+        self.death_frames += 1;
+        if (self.death_frames == 5) {
+            self.active = false;
+            return;
+        }
+    }
+    self.invincibility_frames -|= 1;
+    if (self.invincibility_frames > 0) return;
+
     switch (self.type) {
         .gopher => tickGopher(self, r, game, attribs),
     }
 }
 
 pub fn hurt(self: *Self, damage: u8) void {
-    if (self.invincibility_frames > 0) return;
+    if (self.invincibility_frames > 0 or self.health == 0) return;
 
     self.health -|= damage;
     self.invincibility_frames = 30;
-    if (self.health == 0) {
-        self.active = false;
-    }
 }
 
 pub fn draw(self: Self) void {
@@ -73,14 +81,12 @@ const GopherState = enum(u8) {
 fn tickGopher(self: *Self, r: std.rand.Random, game: *GameData, attribs: []const Attrib) void {
     const room = game.getCurrentRoom();
     const state: *GopherState = @ptrCast(&self.state);
-    self.invincibility_frames -|= 1;
-    if (self.invincibility_frames > 0) return;
     switch (state.*) {
         .idle => {
             self.frame = 0;
             self.face_left = self.counter & 16 != 0;
-            if (self.counter <= 0) {
-                self.counter = r.intRangeLessThan(i32, 100, 500);
+            if (self.counter == 0) {
+                self.counter = r.intRangeLessThan(u32, 100, 500);
                 state.* = .walk;
             }
         },
@@ -93,20 +99,24 @@ fn tickGopher(self: *Self, r: std.rand.Random, game: *GameData, attribs: []const
             } else {
                 self.box.x += amount;
             }
-            if (self.counter <= 0) {
-                self.counter = r.intRangeLessThan(i32, 100, 200);
+            if (self.counter == 0) {
+                self.counter = r.intRangeLessThan(u32, 100, 200);
                 state.* = .idle;
             }
         },
     }
-    self.counter -= 1;
+    self.counter -|= 1;
 
-    if (self.box.overlaps(game.player.box)) {
+    if (self.health > 0 and self.box.overlaps(game.player.box)) {
         game.player.hurt(4);
     }
 }
 
 fn drawGopher(self: Self) void {
+    if (self.health == 0) {
+        effects.drawDeathEffectSmall(self.box.x + @divTrunc(self.box.w, 2), self.box.y + @divTrunc(self.box.h, 2), self.death_frames);
+        return;
+    }
     if (self.invincibility_frames % 6 >= 3) {
         Renderer.Sprite.draw(effects.hurt_fx, self.box.x - 4, self.box.y);
         return;
