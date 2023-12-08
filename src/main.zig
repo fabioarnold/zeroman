@@ -13,6 +13,7 @@ const Room = @import("Room.zig");
 const Stage = @import("Stage.zig");
 const Player = @import("Player.zig");
 const Enemy = @import("Enemy.zig");
+const effects = @import("effects.zig");
 const needleman = @import("stages/needleman.zig").needleman;
 
 // Overwrite default log handler
@@ -32,9 +33,6 @@ var spike_sprite: Renderer.Texture = undefined;
 var tiles_tex: Renderer.Texture = undefined;
 var prev_room_tex: Renderer.Texture = undefined;
 var cur_room_tex: Renderer.Texture = undefined;
-
-var effects_tex: Renderer.Texture = undefined;
-var teleport_tex: Renderer.Texture = undefined;
 
 var font_tex: Renderer.Texture = undefined;
 var text_tex: Renderer.Texture = undefined;
@@ -376,6 +374,7 @@ fn setText(text: []const u8, x: usize, y: usize) void {
 
 export fn onInit() void {
     Renderer.init();
+    effects.load();
     Player.load();
     Enemy.load();
     title_tex.loadFromUrl("img/title.png", 192, 56);
@@ -383,8 +382,6 @@ export fn onInit() void {
     door_sprite.loadFromUrl("img/door.png", 16, 16);
     spike_sprite.loadFromUrl("img/spike.png", 16, 24);
     tiles_tex.loadFromUrl("img/needleman.png", 16, 8);
-    effects_tex.loadFromUrl("img/effects.png", 120, 24);
-    teleport_tex.loadFromUrl("img/teleport.png", 24, 32);
     font_tex.loadFromUrl("img/font.png", 16, 8);
     clearText();
     text_tex.loadFromData(text_buffer[0..], text_w, text_h);
@@ -458,45 +455,6 @@ fn setNextRoom(next_room_index: u8) void {
     uploadRoomTexture(&cur_room_tex, cur_stage.rooms[game_data.cur_room_index]);
 }
 
-var death_frame_counter: u32 = 0;
-fn drawDeathEffect(x: i32, y: i32) void {
-    const frame = @as(i32, @intCast((death_frame_counter / 3) % 6));
-    const src_rect = Rect.init(frame * 24, 0, 24, 24);
-
-    var i: usize = 0;
-    while (i < 8) : (i += 1) {
-        const angle: f32 = std.math.pi * @as(f32, @floatFromInt(i)) / 4.0;
-        const r: f32 = 2 * @as(f32, @floatFromInt(death_frame_counter));
-        const dx = x + @as(i32, @intFromFloat(r * @cos(angle)));
-        const dy = y + @as(i32, @intFromFloat(r * @sin(angle)));
-        Sprite.drawFrame(effects_tex, src_rect, dx, dy);
-    }
-
-    death_frame_counter += 1;
-}
-
-fn drawTeleportEffect() void {
-    if (game_data.counter < 32) return;
-    const frame: i32 = game_data.counter - 32;
-    const x = game_data.player.box.x + @divTrunc(game_data.player.box.w, 2);
-    var y = game_data.player.box.y + game_data.player.box.h;
-    if (frame <= 10 or frame == 15) {
-        if (frame != 15) y -= 16 * (10 - frame);
-        const src_rect = Rect.init(8, 0, 8, 8);
-        var i: i32 = 0;
-        while (i < 4) : (i += 1) {
-            Sprite.drawFrame(teleport_tex, src_rect, x - 4, y + i * 8 - 32);
-        }
-    } else if (frame <= 12) {
-        Sprite.drawFrame(teleport_tex, Rect.init(0, 16, 24, 16), x - 12, y - 16);
-        Sprite.drawFrame(teleport_tex, Rect.init(0, 16, 24, 8), x - 12, y - 24);
-        Sprite.drawFrame(teleport_tex, Rect.init(8, 8, 8, 8), x - 4, y - 32);
-    } else if (frame <= 14) {
-        Sprite.drawFrame(teleport_tex, Rect.init(0, 24, 24, 8), x - 12, y - 8);
-        Sprite.drawFrame(teleport_tex, Rect.init(8, 8, 8, 8), x - 4, y - 16);
-    }
-}
-
 fn drawTitle() void {
     Sprite.drawFrame(title_tex, Rect.init(0, 0, 192, 56), 32, 64);
 }
@@ -507,6 +465,7 @@ fn drawHealthbar() void {
     Sprite.drawFrame(healthbar_tex, Rect.init(12, 0, 12, h), 22, 14);
 }
 
+var death_frame_counter: u32 = 0;
 fn draw() void {
     Renderer.clear();
 
@@ -528,13 +487,15 @@ fn draw() void {
         }
 
         if (game_data.state == .start) {
-            // game_data.player.draw();
-            drawTeleportEffect();
+            const player_x = game_data.player.box.x + @divTrunc(game_data.player.box.w, 2);
+            const player_y = game_data.player.box.y + game_data.player.box.h;
+            effects.drawTeleportEffect(player_x, player_y, game_data.counter);
         } else if (game_data.state == .gameover) {
             if (death_frame_counter < 40 and death_frame_counter % 8 < 4) {
                 game_data.player.draw();
             }
-            drawDeathEffect(game_data.player.box.x - 4, game_data.player.box.y);
+            effects.drawDeathEffect(game_data.player.box.x - 4, game_data.player.box.y, death_frame_counter);
+            death_frame_counter += 1;
         } else {
             game_data.player.draw();
         }

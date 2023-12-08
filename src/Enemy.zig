@@ -5,6 +5,7 @@ const Attrib = @import("Tile.zig").Attrib;
 const Room = @import("Room.zig");
 const Renderer = @import("Renderer.zig");
 const Rect = Renderer.Rect;
+const effects = @import("effects.zig");
 
 const Self = @This();
 
@@ -13,7 +14,6 @@ pub const Type = enum {
 };
 
 var gopher_sprite: Renderer.Texture = undefined;
-var hurt_fx: Renderer.Texture = undefined;
 
 active: bool = false,
 type: Type = undefined,
@@ -27,7 +27,6 @@ face_left: bool = false,
 
 pub fn load() void {
     gopher_sprite.loadFromUrl("img/gopher.png", 72, 24);
-    hurt_fx.loadFromUrl("img/hurt.png", 24, 24);
 }
 
 pub fn activate(self: *Self, @"type": Type, box: Box) void {
@@ -109,7 +108,7 @@ fn tickGopher(self: *Self, r: std.rand.Random, game: *GameData, attribs: []const
 
 fn drawGopher(self: Self) void {
     if (self.invincibility_frames % 6 >= 3) {
-        Renderer.Sprite.draw(hurt_fx, self.box.x - 4, self.box.y);
+        Renderer.Sprite.draw(effects.hurt_fx, self.box.x - 4, self.box.y);
         return;
     }
 
