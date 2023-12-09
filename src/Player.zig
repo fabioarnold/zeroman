@@ -238,28 +238,24 @@ pub fn move(self: *Player, room: Room, attribs: []const Tile.Attrib) void {
 fn doShooting(self: *Player, input: Input, prev_input: Input) void {
     if (input.shoot and !prev_input.shoot) {
         self.shoot_frames = 16;
+        const flip_x: i32 = if (self.face_left) -1 else 1;
+        const offset_x: i32 = switch (self.state) {
+            .idle, .running => 19,
+            else => 15,
+        };
+        const offset_y: i32 = switch (self.state) {
+            .jumping => 8,
+            .climbing => 9,
+            else => 11,
+        };
         for (&self.shots) |*shot| {
             if (!shot.active) {
-                shot.active = true;
-                shot.vx = if (self.face_left) -4 else 4;
-                switch (self.state) {
-                    .idle, .running => {
-                        shot.x = self.box.x + @divTrunc(self.box.w, 2);
-                        shot.x += if (self.face_left) -19 else 19;
-                        shot.y = self.box.y + 11;
-                    },
-                    .jumping => {
-                        shot.x = self.box.x + @divTrunc(self.box.w, 2);
-                        shot.x += if (self.face_left) -15 else 15;
-                        shot.y = self.box.y + 8;
-                    },
-                    .climbing => {
-                        shot.x = self.box.x + @divTrunc(self.box.w, 2);
-                        shot.x += if (self.face_left) -15 else 15;
-                        shot.y = self.box.y + 9;
-                    },
-                    else => {},
-                }
+                shot.* = .{
+                    .active = true,
+                    .x = self.box.x + @divTrunc(self.box.w, 2) + flip_x * offset_x,
+                    .y = self.box.y + offset_y,
+                    .vx = flip_x * 4,
+                };
                 break;
             }
         }
