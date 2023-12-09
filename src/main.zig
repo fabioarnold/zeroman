@@ -382,7 +382,7 @@ export fn onInit() void {
     door_sprite.loadFromUrl("img/door.png", 16, 16);
     spike_sprite.loadFromUrl("img/spike.png", 16, 24);
     tiles_tex.loadFromUrl("img/needleman.png", 16, 8);
-    font_tex.loadFromUrl("img/font.png", 16, 8);
+    font_tex.loadFromUrl("img/font-shadow.png", 16, 8);
     clearText();
     text_tex.loadFromData(text_buffer[0..], text_w, text_h);
 
