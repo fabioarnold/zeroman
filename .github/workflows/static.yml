@@ -1,0 +1,27 @@
+name: Deploy via SSH
+
+on:
+  push:
+    branches: ["master"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: master
+    - run: zig build -Doptimize=ReleaseSmall
+    - name: Copy file via SSH
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.REMOTE_HOST }}
+        username: ${{ secrets.REMOTE_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        source: "index.html,img,js,zig-out"
+        target: "${{ secrets.REMOTE_DIR }}"
