@@ -173,6 +173,8 @@
         instance.exports.onBeforeUnload();
       }
 
+      document.addEventListener("touchstart", e => e.preventDefault());
+      document.addEventListener("touchend", e => e.preventDefault());
       document.addEventListener('keydown', onKeyDown);
       document.addEventListener('keyup', onKeyUp);
       addEventListener("beforeunload", onBeforeUnload);
