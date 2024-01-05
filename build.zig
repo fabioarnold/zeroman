@@ -4,10 +4,11 @@ const GitRepoStep = @import("GitRepoStep.zig");
 
 pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
+    const target = b.resolveTargetQuery(.{ .cpu_arch = .wasm32, .os_tag = .freestanding });
     const wasm = b.addExecutable(.{
         .name = "main",
         .root_source_file = .{ .path = "src/main.zig" },
-        .target = .{ .cpu_arch = .wasm32, .os_tag = .freestanding },
+        .target = target,
         .optimize = optimize,
     });
     wasm.rdynamic = true;

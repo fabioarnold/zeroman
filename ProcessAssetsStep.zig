@@ -48,15 +48,15 @@ const TilesetJson = struct {
     };
 };
 
-step: std.build.Step,
-builder: *std.build.Builder,
+step: std.Build.Step,
+builder: *std.Build,
 
 stages: std.ArrayList(Stage),
 
-pub fn create(b: *std.build.Builder) *ProcessAssetsStep {
+pub fn create(b: *std.Build) *ProcessAssetsStep {
     const result = b.allocator.create(ProcessAssetsStep) catch @panic("memory");
     result.* = ProcessAssetsStep{
-        .step = std.build.Step.init(.{
+        .step = std.Build.Step.init(.{
             .id = .custom,
             .name = "process assets",
             .owner = b,
@@ -85,7 +85,7 @@ fn loadJson(comptime T: type, path: []const u8, allocator: std.mem.Allocator) !T
     })).value;
 }
 
-fn make(step: *std.build.Step, prog_node: *std.Progress.Node) !void {
+fn make(step: *std.Build.Step, prog_node: *std.Progress.Node) !void {
     _ = prog_node;
 
     const self = @fieldParentPtr(ProcessAssetsStep, "step", step);
